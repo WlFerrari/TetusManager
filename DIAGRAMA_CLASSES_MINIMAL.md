@@ -168,35 +168,34 @@ class LoginPage {
 }
 
 %% =========================
-%% Relacionamentos
+%% Relacionamentos (com cardinalidade)
 %% =========================
 
-AuthController --> UserRepository
-ChapasController --> ChapaRepository
-RetalhosController --> RetalhoRepository
-CortesController --> RetalhoRepository
-UsuariosController --> UserRepository
-EmpresaController --> EmpresaRepository
+AuthController "1" --> "1" UserRepository
+ChapasController "1" --> "1" ChapaRepository
+RetalhosController "1" --> "1" RetalhoRepository
+CortesController "1" --> "1" RetalhoRepository
+UsuariosController "1" --> "1" UserRepository
+EmpresaController "1" --> "1" EmpresaRepository
 
-AuthMiddleware --> UserRepository
-ChapaRepository --> DatabaseConnection
-RetalhoRepository --> DatabaseConnection
-UserRepository --> DatabaseConnection
-EmpresaRepository --> DatabaseConnection
+AuthMiddleware "1" --> "1" UserRepository
+ChapaRepository "1" --> "1" DatabaseConnection
+RetalhoRepository "1" --> "1" DatabaseConnection
+UserRepository "1" --> "1" DatabaseConnection
+EmpresaRepository "1" --> "1" DatabaseConnection
 
-ChapasApi --> ApiService
-RetalhosApi --> ApiService
-UsuariosApi --> ApiService
-AuthApi --> ApiService
-EmpresaApi --> ApiService
+ChapasApi "1" --> "1" ApiService
+RetalhosApi "1" --> "1" ApiService
+UsuariosApi "1" --> "1" ApiService
+AuthApi "1" --> "1" ApiService
+EmpresaApi "1" --> "1" ApiService
 
-CortePage --> ChapasApi
-CortePage --> RetalhosApi
-ChapasPage --> ChapasApi
-RetalhosPage --> RetalhosApi
-UsuariosPage --> UsuariosApi
-DashboardPage --> ChapasApi
-DashboardPage --> RetalhosApi
-LoginPage --> AuthApi
+CortePage "1" --> "1" ChapasApi
+CortePage "1" --> "1" RetalhosApi
+ChapasPage "1" --> "1" ChapasApi
+RetalhosPage "1" --> "1" RetalhosApi
+UsuariosPage "1" --> "1" UsuariosApi
+DashboardPage "1" --> "1" ChapasApi
+DashboardPage "1" --> "1" RetalhosApi
+LoginPage "1" --> "1" AuthApi
 ```
-
