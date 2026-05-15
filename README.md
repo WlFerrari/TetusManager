@@ -2,6 +2,23 @@
 
 > Stack: **React 18** (Frontend) + **Node.js + Express** (Backend) + **PostgreSQL** (Banco de Dados)
 
+## Quick Start (Resumo)
+
+```bash
+# Backend
+cd backend
+npm install
+cp .env.example .env
+npm run migrate
+npm run seed
+npm run dev
+
+# Em outro terminal, Frontend
+cd frontend
+npm install
+npm run dev
+```
+
 ---
 
 ## Pré-requisitos
