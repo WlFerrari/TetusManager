@@ -1,0 +1,22 @@
+{
+  "name": "tetusmanager",
+  "version": "1.0.0",
+  "description": "Sistema de Otimização e Gestão de Retalhos — Tetus Marmoraria",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "lucide-react": "^0.383.0",
+    "qrcode.react": "^3.1.0",
+    "html2canvas": "^1.4.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.1"
+  }
+}
