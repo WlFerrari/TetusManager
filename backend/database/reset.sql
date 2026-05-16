@@ -12,5 +12,11 @@ DROP TABLE IF EXISTS chapas CASCADE;
 DROP TABLE IF EXISTS usuarios CASCADE;
 DROP TABLE IF EXISTS empresa CASCADE;
 
+-- Recria o schema
+\i migrations.sql
+
+-- Popula com dados iniciais
+\! node seed.js
+
 -- Confirma
-SELECT 'Banco resetado com sucesso!' as status;
+SELECT 'Banco resetado, recriado e populado com sucesso!' as status;
