@@ -18,6 +18,7 @@ function toModel(row) {
     espessura:   Number(row.espessura),
     status:      row.status,
     qrCode:      row.qr_code,
+    criadoPor:   row.criado_por || null,
     criadoEm:    new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
 }
@@ -47,10 +48,10 @@ const ChapaRepository = {
       espessura: data.espessura,
     })
     const { rows } = await query(`
-      INSERT INTO chapas (id, nome, tipo, cor, largura, comprimento, espessura, status, qr_code)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      INSERT INTO chapas (id, nome, tipo, cor, largura, comprimento, espessura, status, qr_code, criado_por)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
       RETURNING *
-    `, [id, data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode])
+    `, [id, data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.criadoPor || null])
     return toModel(rows[0])
   },
 

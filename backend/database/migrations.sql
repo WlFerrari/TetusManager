@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS chapas (
   status       VARCHAR(20)   NOT NULL DEFAULT 'Disponível'
                CHECK (status IN ('Disponível','Em uso','Esgotado')),
   qr_code      TEXT,
+  criado_por   INTEGER       REFERENCES usuarios(id) ON DELETE SET NULL,
   criado_em    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -54,6 +55,8 @@ CREATE TABLE IF NOT EXISTS retalhos (
   status       VARCHAR(20)   NOT NULL DEFAULT 'Disponível'
                CHECK (status IN ('Disponível','Reservado','Consumido')),
   qr_code      TEXT,
+  criado_por   INTEGER       REFERENCES usuarios(id) ON DELETE SET NULL,
+  consumido_por INTEGER      REFERENCES usuarios(id) ON DELETE SET NULL,
   criado_em    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
@@ -101,3 +104,6 @@ CREATE INDEX IF NOT EXISTS idx_usuarios_perfil   ON usuarios (perfil);
 CREATE INDEX IF NOT EXISTS idx_chapas_status     ON chapas (status);
 CREATE INDEX IF NOT EXISTS idx_retalhos_status   ON retalhos (status);
 CREATE INDEX IF NOT EXISTS idx_retalhos_origem   ON retalhos (origem);
+CREATE INDEX IF NOT EXISTS idx_chapas_criado_por ON chapas (criado_por);
+CREATE INDEX IF NOT EXISTS idx_retalhos_criado_por ON retalhos (criado_por);
+CREATE INDEX IF NOT EXISTS idx_retalhos_consumido_por ON retalhos (consumido_por);

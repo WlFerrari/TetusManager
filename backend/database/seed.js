@@ -66,6 +66,12 @@ async function seed() {
   }
   console.log('Usuários inseridos')
 
+  const { rows: [adminUser] } = await query(
+    'SELECT id FROM usuarios WHERE email = $1 LIMIT 1',
+    ['joao.silva@tetus.com']
+  )
+  const createdById = adminUser ? adminUser.id : null
+
   // ── Chapas ─────────────────────────────────────────────────────────
   const chapas = [
     ['CH001','Preto São Gabriel','Granito','#1a1a2e',120,60,2,'Disponível'],
@@ -81,9 +87,9 @@ async function seed() {
   for (const [id,nome,tipo,cor,largura,comprimento,espessura,status] of chapas) {
     const qrCode = buildChapaQrPayload({ id, nome, tipo, status, largura, comprimento, espessura })
     await query(`
-      INSERT INTO chapas (id,nome,tipo,cor,largura,comprimento,espessura,status,qr_code)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT (id) DO NOTHING
-    `, [id,nome,tipo,cor,largura,comprimento,espessura,status,qrCode])
+      INSERT INTO chapas (id,nome,tipo,cor,largura,comprimento,espessura,status,qr_code,criado_por)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (id) DO NOTHING
+    `, [id,nome,tipo,cor,largura,comprimento,espessura,status,qrCode,createdById])
   }
   console.log('Chapas inseridas')
 
@@ -99,9 +105,9 @@ async function seed() {
   for (const [id,origem,nome,tipo,cor,largura,comprimento,espessura,area,status] of retalhos) {
     const qrCode = buildRetalhoQrPayload({ id, nome, tipo, status, largura, comprimento, espessura, origem })
     await query(`
-      INSERT INTO retalhos (id,origem,nome,tipo,cor,largura,comprimento,espessura,area,status,qr_code)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11) ON CONFLICT (id) DO NOTHING
-    `, [id,origem,nome,tipo,cor,largura,comprimento,espessura,area,status,qrCode])
+      INSERT INTO retalhos (id,origem,nome,tipo,cor,largura,comprimento,espessura,area,status,qr_code,criado_por)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12) ON CONFLICT (id) DO NOTHING
+    `, [id,origem,nome,tipo,cor,largura,comprimento,espessura,area,status,qrCode,createdById])
   }
   console.log('Retalhos inseridos')
 

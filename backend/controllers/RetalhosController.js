@@ -63,7 +63,8 @@ class RetalhosController {
         ...req.body,
         tipo: req.body.tipo || 'Granito',
         cor: req.body.cor || '#6b7280',
-        espessura: req.body.espessura || 2
+        espessura: req.body.espessura || 2,
+        criadoPor: req.user?.id || null,
       })
 
       res.status(201).json({
@@ -87,7 +88,7 @@ class RetalhosController {
 
   async consume(req, res, next) {
     try {
-      const data = await RetalhoRepo.marcarConsumido(req.params.id)
+      const data = await RetalhoRepo.marcarConsumido(req.params.id, req.user?.id || null)
       res.json({
         ok: true,
         data,
@@ -109,4 +110,3 @@ class RetalhosController {
 }
 
 module.exports = new RetalhosController()
-

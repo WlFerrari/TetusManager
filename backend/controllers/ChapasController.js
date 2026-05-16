@@ -52,7 +52,10 @@ class ChapasController {
         })
       }
 
-      const data = await ChapaRepo.insert(req.body)
+      const data = await ChapaRepo.insert({
+        ...req.body,
+        criadoPor: req.user?.id || null,
+      })
       res.status(201).json({
         ok: true,
         data,
@@ -92,4 +95,3 @@ class ChapasController {
 }
 
 module.exports = new ChapasController()
-

@@ -82,6 +82,28 @@ class EmpresaRepository {
   +update()
 }
 
+class Usuario {
+  +id
+  +nome
+  +email
+}
+
+class Chapa {
+  +id
+  +nome
+  +tipo
+  +status
+  +criadoPor
+}
+
+class Retalho {
+  +id
+  +origem
+  +status
+  +criadoPor
+  +consumidoPor
+}
+
 class AuthMiddleware {
   +authMiddleware(req, res, next)
   +requirePerm(perm)
@@ -183,6 +205,15 @@ ChapaRepository "1" --> "1" DatabaseConnection
 RetalhoRepository "1" --> "1" DatabaseConnection
 UserRepository "1" --> "1" DatabaseConnection
 EmpresaRepository "1" --> "1" DatabaseConnection
+
+ChapaRepository "1" --> "0..*" Chapa
+RetalhoRepository "1" --> "0..*" Retalho
+UserRepository "1" --> "0..*" Usuario
+
+Usuario "1" --> "0..*" Chapa : criadoPor
+Usuario "1" --> "0..*" Retalho : criadoPor
+Usuario "1" --> "0..*" Retalho : consumidoPor
+Chapa "1" --> "0..*" Retalho : origem
 
 ChapasApi "1" --> "1" ApiService
 RetalhosApi "1" --> "1" ApiService

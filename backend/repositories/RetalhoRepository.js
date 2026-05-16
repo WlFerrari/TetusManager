@@ -18,6 +18,8 @@ function toModel(row) {
     area:        Number(row.area),
     status:      row.status,
     qrCode:      row.qr_code,
+    criadoPor:   row.criado_por || null,
+    consumidoPor: row.consumido_por || null,
     criadoEm:    new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
 }
@@ -54,11 +56,11 @@ const RetalhoRepository = {
       origem: data.origem || null,
     })
     const { rows } = await query(`
-      INSERT INTO retalhos (id, origem, nome, tipo, cor, largura, comprimento, espessura, area, status, qr_code)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
+      INSERT INTO retalhos (id, origem, nome, tipo, cor, largura, comprimento, espessura, area, status, qr_code, criado_por)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
       RETURNING *
     `, [id, data.origem||null, nome, tipo, cor,
-        data.largura, data.comprimento, espessura, area, status, qrCode])
+        data.largura, data.comprimento, espessura, area, status, qrCode, data.criadoPor || null])
     return toModel(rows[0])
   },
 
@@ -120,10 +122,10 @@ const RetalhoRepository = {
   },
 
   /** [D] DELETE lógico — soft delete */
-  async marcarConsumido(id) {
+  async marcarConsumido(id, consumidoPor) {
     const { rows } = await query(`
-      UPDATE retalhos SET status='Consumido' WHERE id=$1 RETURNING *
-    `, [id])
+      UPDATE retalhos SET status='Consumido', consumido_por=$2 WHERE id=$1 RETURNING *
+    `, [id, consumidoPor || null])
     if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
