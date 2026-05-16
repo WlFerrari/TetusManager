@@ -4,6 +4,7 @@ Este diagrama reúne as classes principais do **backend** e do **frontend** em u
 
 ```mermaid
 classDiagram
+direction TB
   %% =========================
   %% BACKEND
   %% =========================
@@ -282,4 +283,3 @@ classDiagram
 No IntelliJ:
 - Abra `DIAGRAMA_CLASSES_UNIFICADO.md`
 - Clique na aba **Preview**
-

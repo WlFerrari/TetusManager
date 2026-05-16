@@ -4,6 +4,7 @@
 
 ```mermaid
 classDiagram
+direction TB
 %% =========================
 %% Backend (Node/Express)
 %% =========================
@@ -229,4 +230,3 @@ UsuariosPage "1" --> "1" UsuariosApi
 DashboardPage "1" --> "1" ChapasApi
 DashboardPage "1" --> "1" RetalhosApi
 LoginPage "1" --> "1" AuthApi
-```
