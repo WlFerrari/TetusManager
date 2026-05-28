@@ -12,6 +12,7 @@ stateDiagram-v2
 
     Disponivel --> Inativa: excluirChapa()
     Inativa --> Disponivel: reativarChapa()
+    Inativa --> [*]: finalizarChapa()
 
     state Disponivel {
         [*] --> Listada
@@ -46,6 +47,7 @@ stateDiagram-v2
         Chapa_EmCorte --> Chapa_Inativa: chapaEsgotada()
         Chapa_Disponivel --> Chapa_Inativa: excluirChapa()
         Chapa_Inativa --> Chapa_Disponivel: reativarChapa()
+        Chapa_Inativa --> [*]: finalizarChapa()
     }
 
     state Retalho {

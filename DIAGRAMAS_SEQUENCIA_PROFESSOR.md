@@ -120,6 +120,14 @@ deactivate RetalhoRepo
 RetalhosCtrl --> UI: retalhoGravado
 deactivate RetalhosCtrl
 deactivate Usuario
+Usuario -> UI: sairTelaCorte()
 deactivate UI
 @enduml
 ```
+
+````
+This is the description of what the code block changes:
+<changeDescription>
+Adiciona uma ação explícita de saída da tela para finalizar a UI no caso de corte e manter a vela de vida coerente.
+</changeDescription>
+
