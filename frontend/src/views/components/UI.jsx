@@ -34,30 +34,6 @@ export function Badge({ status }) {
   )
 }
 
-// ── CRUD operation label ──────────────────────────────────────────────
-const CRUD_COLORS = {
-  C: { bg: '#dbeafe', color: '#1e40af', label: 'CREATE' },
-  R: { bg: '#d1fae5', color: '#065f46', label: 'READ'   },
-  U: { bg: '#fef3c7', color: '#92400e', label: 'UPDATE' },
-  D: { bg: '#fee2e2', color: '#991b1b', label: 'DELETE' },
-}
-export function CrudLabel({ op }) {
-  const s = CRUD_COLORS[op]
-  return (
-    <span style={{
-      background: s.bg,
-      color: s.color,
-      fontSize: 9,
-      fontWeight: 700,
-      padding: '1px 5px',
-      borderRadius: 4,
-      letterSpacing: '.5px',
-      marginLeft: 4,
-    }}>
-      {op}:{s.label}
-    </span>
-  )
-}
 
 // ── Modal ─────────────────────────────────────────────────────────────
 export function Modal({ title, onClose, children }) {
@@ -66,12 +42,12 @@ export function Modal({ title, onClose, children }) {
       <div className="modal-box">
         <div style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          padding: '15px 20px', borderBottom: '1px solid #f3f4f6',
+          padding: '15px 20px', borderBottom: '1px solid var(--border-color)',
         }}>
-          <span style={{ fontWeight: 700, fontSize: 15, color: '#1f2937' }}>{title}</span>
+          <span style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>{title}</span>
           <button onClick={onClose} style={{
             background: 'none', border: 'none', cursor: 'pointer',
-            color: '#9ca3af', display: 'flex', padding: 4,
+            color: 'var(--text-secondary)', display: 'flex', padding: 4,
           }}>
             <X size={16} />
           </button>
@@ -87,9 +63,10 @@ export function ConfirmDelete({ message, onConfirm, onCancel }) {
   return (
     <div className="overlay">
       <div style={{
-        background: '#fff', borderRadius: 16, padding: 28,
+        background: 'var(--bg-secondary)', borderRadius: 16, padding: 28,
         maxWidth: 360, width: '92%', textAlign: 'center',
         boxShadow: '0 8px 32px rgba(0,0,0,.14)',
+        border: '1px solid var(--border-color)',
       }}>
         <div style={{
           width: 48, height: 48, background: '#fee2e2', borderRadius: '50%',
@@ -98,14 +75,14 @@ export function ConfirmDelete({ message, onConfirm, onCancel }) {
         }}>
           <Trash2 size={20} />
         </div>
-        <p style={{ fontWeight: 700, color: '#1f2937', fontSize: 15, marginBottom: 8 }}>
+        <p style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 15, marginBottom: 8 }}>
           Confirmar exclusão
         </p>
-        <p style={{ fontSize: 13, color: '#6b7280', marginBottom: 22 }}>{message}</p>
+        <p style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 22 }}>{message}</p>
         <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
           <button onClick={onCancel} style={{
-            padding: '9px 20px', border: '1px solid #e5e7eb', borderRadius: 8,
-            background: '#fff', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: '#374151',
+            padding: '9px 20px', border: '1px solid var(--border-color)', borderRadius: 8,
+            background: 'var(--bg-secondary)', fontSize: 13, fontWeight: 500, cursor: 'pointer', color: 'var(--text-primary)',
           }}>
             Cancelar
           </button>
@@ -156,8 +133,8 @@ export const BtnPrimary = ({ onClick, disabled, children, style = {} }) => (
 
 export const BtnSecondary = ({ onClick, children, style = {} }) => (
   <button onClick={onClick} style={{
-    background: '#fff', color: '#374151',
-    border: '1px solid #e5e7eb', borderRadius: 8,
+    background: 'var(--bg-secondary)', color: 'var(--text-primary)',
+    border: '1px solid var(--border-color)', borderRadius: 8,
     padding: '10px 16px', fontSize: 14, fontWeight: 500, cursor: 'pointer',
     ...style,
   }}>
@@ -168,9 +145,9 @@ export const BtnSecondary = ({ onClick, children, style = {} }) => (
 export const BtnIcon = ({ onClick, title, children, danger = false }) => (
   <button onClick={onClick} title={title} style={{
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    padding: '5px 8px', border: '1px solid #e5e7eb', borderRadius: 6,
-    background: '#fff', cursor: 'pointer',
-    color: danger ? '#dc2626' : '#6b7280',
+    padding: '5px 8px', border: '1px solid var(--border-color)', borderRadius: 6,
+    background: 'var(--bg-secondary)', cursor: 'pointer',
+    color: danger ? '#dc2626' : 'var(--text-secondary)',
   }}>
     {children}
   </button>
@@ -208,7 +185,7 @@ export function SectionHeader({ title, subtitle, action }) {
 export function SearchInput({ value, onChange, placeholder }) {
   return (
     <div style={{ position: 'relative', marginBottom: 14 }}>
-      <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="#9ca3af" strokeWidth={2}
+      <svg viewBox="0 0 24 24" width={14} height={14} fill="none" stroke="var(--text-secondary)" strokeWidth={2}
         style={{ position: 'absolute', left: 11, top: '50%', transform: 'translateY(-50%)' }}>
         <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
       </svg>

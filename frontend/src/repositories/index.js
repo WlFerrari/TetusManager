@@ -17,6 +17,10 @@ export const chapaRepo = {
     const res = await ChapaService.buscar(id)
     return res.ok ? mkChapa(res.data) : null
   },
+  listarDisponiveis: async () => {
+    const res = await ChapaService.listarDisponiveis()
+    return res.ok ? res.data.map(mkChapa) : []
+  },
   insert: async (data) => {
     const res = await ChapaService.criar(data)
     if (!res.ok) throw new Error(res.msg)

@@ -64,6 +64,11 @@ const RetalhoRepository = {
     return toModel(rows[0])
   },
 
+  /** Alias: inserir (diagrama) */
+  async inserir(data) {
+    return this.insert(data)
+  },
+
   /** [R] READ ALL */
   async findAll(filtro = '') {
     if (filtro) {
@@ -82,6 +87,11 @@ const RetalhoRepository = {
   async findById(id) {
     const { rows } = await query('SELECT * FROM retalhos WHERE id=$1', [id])
     return toModel(rows[0])
+  },
+
+  /** Alias: buscarPorId (diagrama) */
+  async buscarPorId(id) {
+    return this.findById(id)
   },
 
   /** [U] UPDATE */

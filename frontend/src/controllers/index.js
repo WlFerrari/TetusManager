@@ -81,27 +81,46 @@ class ChapaController {
       return {ok:0,msg:e.message}
     }
   }
-  
-   calcularCorte(cid, cc, lc, nome='') {
-     // Cálculo básico: area = comprimento × largura
-     if (!cid || !cc || !lc) return {ok:0,msg:'Todos os campos são obrigatórios.'}
-     if (cc <= 0 || lc <= 0) return {ok:0,msg:'Comprimento e largura devem ser maiores que 0.'}
 
-     const area = cc * lc
-     const retalho = {
-       origem: String(cid),
-       comprimento: cc,
-       largura: lc,
-       area: area,
-       status: 'Disponível',
-       nome: nome?.trim() ? nome : `Sobra-${Math.random().toString(36).substr(2, 9)}`,
-       tipo: 'Granito',
-       cor: '#6b7280',
-       espessura: 2
-     }
+  // Aliases do diagrama
+  async listarChapas(f='') { return this.listar(f) }
+  async gravarChapa(d) { return this.criar(d) }
+  async atualizarChapa(id, d) { return this.atualizar(id, d) }
+  async excluirChapa(id) { return this.excluir(id) }
+  async consultarChapa(id) { return this.buscar(id) }
+  async listarChapasDisponiveis() {
+    try {
+      const a = await this.r.listarDisponiveis()
+      return { ok: 1, data: a }
+    } catch (err) {
+      return { ok: 0, data: [], msg: err.message }
+    }
+  }
 
-     return {ok:1, retalho, msg:`Retalho calculado: ${area.toFixed(2)}m²`}
-   }
+  calcularCorte(cid, cc, lc, nome = '', chapa = null) {
+    // Cálculo básico: area = comprimento × largura
+    if (!cid || !cc || !lc) return { ok: 0, msg: 'Todos os campos são obrigatórios.' }
+    if (cc <= 0 || lc <= 0) return { ok: 0, msg: 'Comprimento e largura devem ser maiores que 0.' }
+
+    if (chapa && (cc > Number(chapa.comprimento) || lc > Number(chapa.largura))) {
+      return { ok: 0, msg: 'O corte é maior do que a chapa selecionada. Ajuste as medidas.' }
+    }
+
+    const area = cc * lc
+    const retalho = {
+      origem: String(cid),
+      comprimento: cc,
+      largura: lc,
+      area: area,
+      status: 'Disponível',
+      nome: nome?.trim() ? nome : `Sobra-${Math.random().toString(36).substr(2, 9)}`,
+      tipo: 'Granito',
+      cor: '#6b7280',
+      espessura: 2
+    }
+
+    return { ok: 1, retalho, msg: `Retalho calculado: ${area.toFixed(2)}m²` }
+  }
 
   async stats() {
     try {
@@ -115,7 +134,7 @@ class ChapaController {
 // ── RetalhoController ─────────────────────────────────────────────────
 class RetalhoController {
   constructor(r) { this.r = r }
-  
+
    async criar(d) {
      if (!d.nome?.trim()) return {ok:0,msg:'Nome é obrigatório.'}
      if (!(+d.comprimento>0 && +d.largura>0)) return {ok:0,msg:'Dimensões inválidas.'}
@@ -134,7 +153,10 @@ class RetalhoController {
        return {ok:0,msg:err.message}
      }
    }
-  
+
+  // Alias do diagrama
+  async gravarRetalho(d) { return this.criar(d) }
+
   async listar(f='') {
     try {
       const a = await this.r.findAll(f)
@@ -171,7 +193,7 @@ class RetalhoController {
       return {ok:0,msg:e.message}
     }
   }
-  
+
   async marcarConsumido(id) {
     try {
       const e = await this.r.marcarConsumido(id)
@@ -180,7 +202,7 @@ class RetalhoController {
       return {ok:0,msg:e.message}
     }
   }
-  
+
   async stats() {
     try {
       return await this.r.stats()

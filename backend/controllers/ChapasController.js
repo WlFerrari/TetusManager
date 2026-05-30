@@ -8,6 +8,11 @@ class ChapasController {
     } catch (e) { next(e) }
   }
 
+  // Alias do diagrama
+  async listarChapas(req, res, next) {
+    return this.list(req, res, next)
+  }
+
   async show(req, res, next) {
     try {
       const data = await ChapaRepo.findById(req.params.id)
@@ -19,6 +24,11 @@ class ChapasController {
       }
       res.json({ ok: true, data })
     } catch (e) { next(e) }
+  }
+
+  // Alias do diagrama
+  async consultarChapa(req, res, next) {
+    return this.show(req, res, next)
   }
 
   async stats(req, res, next) {
@@ -64,6 +74,11 @@ class ChapasController {
     } catch (e) { next(e) }
   }
 
+  // Alias do diagrama
+  async gravarChapa(req, res, next) {
+    return this.create(req, res, next)
+  }
+
   async update(req, res, next) {
     try {
       if (!req.body.nome?.trim()) {
@@ -82,6 +97,11 @@ class ChapasController {
     } catch (e) { next(e) }
   }
 
+  // Alias do diagrama
+  async atualizarChapa(req, res, next) {
+    return this.update(req, res, next)
+  }
+
   async delete(req, res, next) {
     try {
       const data = await ChapaRepo.delete(req.params.id)
@@ -90,6 +110,19 @@ class ChapasController {
         data,
         msg: `Chapa "${data.nome}" excluída!`
       })
+    } catch (e) { next(e) }
+  }
+
+  // Alias do diagrama
+  async excluirChapa(req, res, next) {
+    return this.delete(req, res, next)
+  }
+
+  // Lista apenas chapas disponiveis (diagrama)
+  async listarChapasDisponiveis(req, res, next) {
+    try {
+      const data = await ChapaRepo.listarDisponiveis()
+      res.json({ ok: true, data })
     } catch (e) { next(e) }
   }
 }

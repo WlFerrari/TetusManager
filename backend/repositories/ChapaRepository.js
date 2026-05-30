@@ -69,10 +69,28 @@ const ChapaRepository = {
     return rows.map(toModel)
   },
 
+  /** Alias: listar (diagrama) */
+  async listar(filtro = '') {
+    return this.findAll(filtro)
+  },
+
+  /** Alias: listarDisponiveis (diagrama) */
+  async listarDisponiveis() {
+    const { rows } = await query(
+      "SELECT * FROM chapas WHERE status = 'Disponível' ORDER BY criado_em DESC"
+    )
+    return rows.map(toModel)
+  },
+
   /** [R] READ ONE */
   async findById(id) {
     const { rows } = await query('SELECT * FROM chapas WHERE id = $1', [id])
     return toModel(rows[0])
+  },
+
+  /** Alias: buscarPorId (diagrama) */
+  async buscarPorId(id) {
+    return this.findById(id)
   },
 
   /** [U] UPDATE */
@@ -98,11 +116,21 @@ const ChapaRepository = {
     return toModel(rows[0])
   },
 
+  /** Alias: atualizar (diagrama) */
+  async atualizar(id, data) {
+    return this.update(id, data)
+  },
+
   /** [D] DELETE físico */
   async delete(id) {
     const { rows } = await query('DELETE FROM chapas WHERE id=$1 RETURNING *', [id])
     if (!rows[0]) throw new Error(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
+  },
+
+  /** Alias: remover (diagrama) */
+  async remover(id) {
+    return this.delete(id)
   },
 
   /** Stats para dashboard */

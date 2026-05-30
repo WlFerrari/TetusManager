@@ -8,7 +8,7 @@ node "Computador do Usuario" <<device>> as Client {
   artifact "Browser (UI React)" as Browser
 }
 
-node "Servidor de Aplicacao" <<server>> as AppServer {
+node "Servidor" <<server>> as AppServer {
   artifact "Frontend Build (Vite)" as FrontendBuild
   artifact "Backend Node/Express" as BackendApp
   artifact "PostgreSQL" as Postgres
@@ -18,4 +18,3 @@ node "Servidor de Aplicacao" <<server>> as AppServer {
 Client -- AppServer : <<HTTPS>>
 
 @enduml
-```

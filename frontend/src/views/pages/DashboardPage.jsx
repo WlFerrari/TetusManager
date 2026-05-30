@@ -102,23 +102,6 @@ export default function DashboardPage() {
           ))}
         </div>
       </div>
-
-      {/* Architecture banner */}
-      <div className="card" style={{ marginTop:14 }}>
-        <p style={{ fontSize:13, fontWeight:600, color:'#374151', marginBottom:12 }}>Arquitetura MVC</p>
-        <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fit, minmax(160px,1fr))', gap:10 }}>
-          {[
-            ['Model',      'mkChapa · mkRetalho · mkUser',               '#ede9fe','#7c3aed'],
-            ['Repository', 'BaseRepository · CRUD genérico',             '#dbeafe','#1d4ed8'],
-            ['Controller', 'ChapaCtrl · RetalhoCtrl · UserCtrl',        '#d1fae5','#065f46'],
-          ].map(([t,d,bg,c]) => (
-            <div key={t} style={{ background:bg, borderRadius:9, padding:'12px 14px' }}>
-              <p style={{ fontSize:12, fontWeight:700, color:c, marginBottom:4 }}>{t}</p>
-              <p style={{ fontSize:11, color:c, opacity:.8, lineHeight:1.5 }}>{d}</p>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   )
 }

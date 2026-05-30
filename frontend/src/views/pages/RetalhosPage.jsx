@@ -4,7 +4,7 @@ import { retalhoCtrl } from '../../controllers/index.js'
 import { TIPOS_ROCHA, STATUS_RETALHO } from '../../models/index.js'
 import {
   Badge, Modal, ConfirmDelete, FormField,
-  BtnPrimary, BtnSecondary, BtnIcon, CrudLabel, SectionHeader, SearchInput,
+  BtnPrimary, BtnSecondary, BtnIcon, SectionHeader, SearchInput,
 } from '../components/UI.jsx'
 import QRCodeModal from '../components/QRCodeModal.jsx'
 
@@ -35,16 +35,14 @@ export default function RetalhosPage({ onUpdate }) {
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const closeModal = () => { setModal(null); setErros({}); setTarget(null) }
 
-  // [C] CREATE
   async function handleAdd() {
-    const r = await retalhoCtrl.criar(form)
+    const r = await retalhoCtrl.gravarRetalho(form)
     if (!r.ok) { setErros({ geral: r.msg }); return }
     onUpdate(r.msg, 'ok')
     carregarRetalhos()
     closeModal()
   }
 
-  // [U] UPDATE
   async function handleEdit() {
     const r = await retalhoCtrl.atualizar(form.id, form)
     if (!r.ok) { setErros({ geral: r.msg }); return }
@@ -53,7 +51,6 @@ export default function RetalhosPage({ onUpdate }) {
     closeModal()
   }
 
-  // [D] DELETE físico
   async function handleDelete() {
     if (!target?.id) { onUpdate('Retalho não selecionado.', 'err'); closeModal(); return }
     const r = await retalhoCtrl.excluir(target.id)
@@ -62,7 +59,6 @@ export default function RetalhosPage({ onUpdate }) {
     closeModal()
   }
 
-  // [D] DELETE lógico — soft delete (mantém histórico)
   async function handleConsumir(id) {
     const r = await retalhoCtrl.marcarConsumido(id)
     onUpdate(r.msg, r.ok ? 'ok' : 'err')
@@ -77,18 +73,16 @@ export default function RetalhosPage({ onUpdate }) {
     <div>
       <SectionHeader
         title="Retalhos"
-        subtitle={`CRUD completo · delete físico e lógico (soft delete) · ${lista.length} registro(s)`}
+        subtitle={`${lista.length} registro(s)`}
         action={
           <BtnPrimary onClick={() => { setForm(BLANK); setModal('add') }}>
-            <Plus size={14} /> Novo Retalho <CrudLabel op="C" />
+            <Plus size={14} /> Novo Retalho
           </BtnPrimary>
         }
       />
 
-      {/* [R] READ — busca */}
-      <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nome, tipo, status ou ID… (READ)" />
+      <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nome, tipo, status ou ID…" />
 
-      {/* [R] READ — listagem */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: '68vh', overflowY: 'auto' }}>
         {loading ? (
           <div style={{ textAlign: 'center', padding: '48px 0', color: '#d1d5db' }}>
@@ -122,31 +116,25 @@ export default function RetalhosPage({ onUpdate }) {
                 >
                   <QrCode size={12} /> QR
                 </button>
-                <BtnIcon title="UPDATE" onClick={() => { setForm({ ...r }); setModal('edit') }}><Edit2 size={13} /></BtnIcon>
+                <BtnIcon title="Editar" onClick={() => { setForm({ ...r }); setModal('edit') }}><Edit2 size={13} /></BtnIcon>
                 {r.status !== 'Consumido' && (
                   <button
-                    title="DELETE lógico: marcar como consumido (mantém histórico)"
+                    title="Marcar como consumido (mantém histórico)"
                     onClick={() => handleConsumir(r.id)}
                     style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 9px', border: '1px solid #e5e7eb', borderRadius: 6, background: '#fff', cursor: 'pointer', fontSize: 10, color: '#92400e', fontWeight: 500 }}
                   >
-                    <CheckSquare size={12} /> consumir <CrudLabel op="D" />
+                    <CheckSquare size={12} /> consumir
                   </button>
                 )}
-                <BtnIcon title="DELETE físico" danger onClick={() => { setTarget(r); setModal('del') }}><Trash2 size={13} /></BtnIcon>
+                <BtnIcon title="Excluir" danger onClick={() => { setTarget(r); setModal('del') }}><Trash2 size={13} /></BtnIcon>
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* Modal CREATE / UPDATE */}
       {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? 'Novo Retalho (CREATE)' : 'Editar Retalho (UPDATE)'} onClose={closeModal}>
-          <div style={{ background: modal === 'add' ? '#eff6ff' : '#fefce8', borderRadius: 8, padding: '7px 12px', fontSize: 12, color: modal === 'add' ? '#1e40af' : '#92400e', marginBottom: 14, fontWeight: 500 }}>
-            <CrudLabel op={modal === 'add' ? 'C' : 'U'} />
-            {' '}{modal === 'add' ? 'retalhoCtrl.criar(data)' : `retalhoCtrl.atualizar("${form.id}", data)`}
-          </div>
-
+        <Modal title={modal === 'add' ? 'Novo Retalho' : 'Editar Retalho'} onClose={closeModal}>
           {erros.geral && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{erros.geral}</p>}
 
           <FormField label="Nome *">
@@ -190,7 +178,6 @@ export default function RetalhosPage({ onUpdate }) {
         </Modal>
       )}
 
-      {/* Confirm DELETE físico */}
       {modal === 'del' && target && (
         <ConfirmDelete
           message={`Excluir permanentemente o retalho "${target?.id || 'sem id'}"? O registro será removido do sistema.`}
@@ -199,7 +186,6 @@ export default function RetalhosPage({ onUpdate }) {
         />
       )}
 
-      {/* QR Code Modal */}
       {qrCodeItem && (
         <QRCodeModal 
           item={qrCodeItem} 

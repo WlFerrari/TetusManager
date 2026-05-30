@@ -55,6 +55,7 @@ export const AuthService = {
 // ════════════════════════════════════════════════════════════════════════
 export const ChapaService = {
   listar:   (q = '')  => get(`/chapas${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  listarDisponiveis: () => get('/chapas/disponiveis'),
   buscar:   (id)      => get(`/chapas/${id}`),
   stats:    ()        => get('/chapas/stats'),
   criar:    (data)    => post('/chapas', data),

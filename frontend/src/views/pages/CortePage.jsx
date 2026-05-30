@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { Scissors, QrCode, X, CheckCircle } from 'lucide-react'
 import { chapaCtrl, retalhoCtrl } from '../../controllers/index.js'
-import { FormField, BtnPrimary, CrudLabel } from '../components/UI.jsx'
+import { FormField, BtnPrimary } from '../components/UI.jsx'
 
 export default function CortePage({ onUpdate }) {
   const [form, setForm] = useState({ chapaId: '', cc: '', lc: '', obs: '' })
@@ -15,7 +15,7 @@ export default function CortePage({ onUpdate }) {
 
   async function carregarChapas() {
     setLoading(true)
-    const r = await chapaCtrl.listar()
+    const r = await chapaCtrl.listarChapasDisponiveis()
     setChapas(r.ok ? r.data : [])
     setLoading(false)
   }
@@ -27,7 +27,7 @@ export default function CortePage({ onUpdate }) {
    // Combina o nome da chapa com observações (se houver)
    const nomeRetalho = chapa ? (form.obs?.trim() ? `${chapa.nome} - ${form.obs}` : chapa.nome) : ''
    const calc = (chapa && +form.cc > 0 && +form.lc > 0)
-     ? chapaCtrl.calcularCorte(form.chapaId, +form.cc, +form.lc, nomeRetalho)
+     ? chapaCtrl.calcularCorte(form.chapaId, +form.cc, +form.lc, nomeRetalho, chapa)
      : null
 
   const aprov = calc?.ok && chapa
@@ -36,8 +36,7 @@ export default function CortePage({ onUpdate }) {
 
   async function handleSalvar() {
     if (!calc || !calc.ok) return
-    // [C] CREATE — chama retalhoCtrl.criar() com os dados calculados
-    const r = await retalhoCtrl.criar(calc.retalho)
+    const r = await retalhoCtrl.gravarRetalho(calc.retalho)
     if (r.ok) {
       setDone(r.data)
       setForm({ chapaId: '', cc: '', lc: '', obs: '' })
@@ -54,7 +53,7 @@ export default function CortePage({ onUpdate }) {
       <div style={{ marginBottom: 18 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Registrar Corte</h2>
         <p style={{ fontSize: 12, color: '#6b7280' }}>
-          ChapaCtrl.calcularCorte() → RetalhoCtrl.criar() <CrudLabel op="C" />
+          ChapaCtrl.calcularCorte() → RetalhoCtrl.gravarRetalho()
         </p>
       </div>
 
@@ -115,14 +114,14 @@ export default function CortePage({ onUpdate }) {
             <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{calc.msg}</p>
           )}
 
-          {calc?.ok && (
+          {!!calc?.ok && (
             <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#92400e', marginBottom: 12 }}>
               ⚠ Certifique-se das medidas antes de salvar. O QR Code será gerado automaticamente para a sobra.
             </div>
           )}
 
           <BtnPrimary onClick={handleSalvar} disabled={!canSave} style={{ width: '100%', justifyContent: 'center' }}>
-            <QrCode size={15} /> Salvar e Gerar QR Code <CrudLabel op="C" />
+            <QrCode size={15} /> Salvar e Gerar QR Code
           </BtnPrimary>
         </div>
 

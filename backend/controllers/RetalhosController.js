@@ -56,6 +56,12 @@ class RetalhosController {
             msg: `Chapa "${origem}" não encontrada.`
           })
         }
+        if (+comprimento > Number(chapa.comprimento) || +largura > Number(chapa.largura)) {
+          return res.status(400).json({
+            ok: false,
+            msg: 'O corte é maior do que a chapa selecionada. Ajuste as medidas.'
+          })
+        }
       }
 
       // Garantir valores padrão
@@ -73,6 +79,11 @@ class RetalhosController {
         msg: `Retalho "${data.id}" cadastrado!`
       })
     } catch (e) { next(e) }
+  }
+
+  // Alias do diagrama
+  async gravarRetalho(req, res, next) {
+    return this.create(req, res, next)
   }
 
   async update(req, res, next) {

@@ -8,7 +8,7 @@ import { userCtrl, empresaCtrl } from '../../controllers/index.js'
 import { PERFIS_USUARIO, LABELS_PERMISSOES, PERMISSOES_PADRAO } from '../../models/index.js'
 import {
   Badge, Modal, ConfirmDelete, FormField,
-  BtnPrimary, BtnSecondary, BtnIcon, CrudLabel, Avatar, SearchInput,
+  BtnPrimary, BtnSecondary, BtnIcon, Avatar, SearchInput,
 } from '../components/UI.jsx'
 
 // ── helper: toggle switch ─────────────────────────────────────────────
@@ -443,7 +443,7 @@ function TabUsuarios({ user, onToast }) {
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
         <p style={{ fontSize: 13, color: '#6b7280' }}>Gerencie usuários e suas permissões individuais.</p>
         <BtnPrimary onClick={() => { setForm(BLANK); setModal('add') }}>
-          <Plus size={14} /> Novo Usuário <CrudLabel op="C" />
+          <Plus size={14} /> Novo Usuário
         </BtnPrimary>
       </div>
 
@@ -508,7 +508,7 @@ function TabUsuarios({ user, onToast }) {
 
       {/* Modal ADD / EDIT */}
       {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? 'Novo Usuário (CREATE)' : 'Editar Usuário (UPDATE)'} onClose={close}>
+        <Modal title={modal === 'add' ? 'Novo Usuário' : 'Editar Usuário'} onClose={close}>
           <FormField label="Nome completo *">
             <input value={form.nome || ''} onChange={e => F('nome', e.target.value)} placeholder="Nome do usuário" />
           </FormField>
@@ -591,15 +591,6 @@ function TabUsuarios({ user, onToast }) {
             </>
           )}
         </Modal>
-      )}
-
-      {/* Confirm DELETE */}
-      {modal === 'del' && target && (
-        <ConfirmDelete
-          message={`Excluir permanentemente o usuário "${target?.nome || 'sem nome'}"?`}
-          onConfirm={handleDelete}
-          onCancel={close}
-        />
       )}
     </div>
   )

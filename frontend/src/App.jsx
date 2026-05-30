@@ -101,7 +101,6 @@ function AppContent() {
         <div className="top-bar desktop-only">
           <div /> {/* spacer */}
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <span style={{ fontSize:12, color:'var(--text-secondary)' }}>React 18 · Vite · MVC</span>
             <div style={{ position:'relative' }}>
               <button style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
                 <Bell size={17}/>

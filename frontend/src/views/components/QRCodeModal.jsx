@@ -87,20 +87,22 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
     >
       <div
         style={{
-          background: '#fff',
+          position: 'relative',
+          background: 'var(--bg-secondary)',
           borderRadius: 12,
           padding: 32,
           width: '90%',
           maxWidth: 420,
           boxShadow: '0 20px 25px rgba(0, 0, 0, 0.15)',
+          border: '1px solid var(--border-color)',
         }}
         onClick={e => e.stopPropagation()}
       >
         {/* Cabeçalho */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
           <div>
-            <h2 style={{ fontSize: 18, fontWeight: 700, color: '#111827', margin: 0 }}>QR Code</h2>
-            <p style={{ fontSize: 13, color: '#6b7280', margin: '4px 0 0 0' }}>{item.nome}</p>
+            <h2 style={{ fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>QR Code</h2>
+            <p style={{ fontSize: 13, color: 'var(--text-secondary)', margin: '4px 0 0 0' }}>{item.nome}</p>
           </div>
           <button
             onClick={onClose}
@@ -108,7 +110,7 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
               background: 'none',
               border: 'none',
               cursor: 'pointer',
-              color: '#9ca3af',
+              color: 'var(--text-secondary)',
               padding: 4,
             }}
           >
@@ -122,11 +124,11 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
           style={{
             display: 'flex',
             justifyContent: 'center',
-            background: '#f9fafb',
+            background: 'var(--bg-tertiary)',
             borderRadius: 8,
             padding: 20,
             marginBottom: 24,
-            border: '1px solid #e5e7eb',
+            border: '1px solid var(--border-color)',
           }}
         >
           <QRCode
@@ -140,21 +142,21 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
         </div>
 
         {/* Informações */}
-        <div style={{ background: '#f3f4f6', borderRadius: 8, padding: 12, marginBottom: 24, fontSize: 13 }}>
-          <p style={{ margin: '4px 0', color: '#374151' }}>
+        <div style={{ background: 'var(--bg-tertiary)', borderRadius: 8, padding: 12, marginBottom: 24, fontSize: 13 }}>
+          <p style={{ margin: '4px 0', color: 'var(--text-primary)' }}>
             <strong>ID:</strong> {item.id}
           </p>
-          <p style={{ margin: '4px 0', color: '#374151' }}>
+          <p style={{ margin: '4px 0', color: 'var(--text-primary)' }}>
             <strong>Tipo:</strong> {item.tipo}
           </p>
-          <p style={{ margin: '4px 0', color: '#374151' }}>
+          <p style={{ margin: '4px 0', color: 'var(--text-primary)' }}>
             <strong>Status:</strong> {item.status}
           </p>
-          <p style={{ margin: '4px 0', color: '#374151' }}>
+          <p style={{ margin: '4px 0', color: 'var(--text-primary)' }}>
             <strong>Dimensões:</strong> {item.largura} × {item.comprimento} × {item.espessura}mm
           </p>
           {item.origem && (
-            <p style={{ margin: '4px 0', color: '#374151' }}>
+            <p style={{ margin: '4px 0', color: 'var(--text-primary)' }}>
               <strong>Origem:</strong> {item.origem}
             </p>
           )}
@@ -190,17 +192,17 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
             style={{
               flex: 1,
               padding: '10px 16px',
-              background: '#e5e7eb',
-              color: '#374151',
-              border: 'none',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
               borderRadius: 6,
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
               transition: 'background 0.2s',
             }}
-            onMouseEnter={e => e.target.style.background = '#d1d5db'}
-            onMouseLeave={e => e.target.style.background = '#e5e7eb'}
+            onMouseEnter={e => e.target.style.background = 'var(--bg-secondary)'}
+            onMouseLeave={e => e.target.style.background = 'var(--bg-tertiary)'}
           >
             Imprimir
           </button>
@@ -209,17 +211,17 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
             style={{
               flex: 1,
               padding: '10px 16px',
-              background: '#f3f4f6',
-              color: '#374151',
-              border: '1px solid #d1d5db',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
+              border: '1px solid var(--border-color)',
               borderRadius: 6,
               cursor: 'pointer',
               fontSize: 13,
               fontWeight: 600,
               transition: 'background 0.2s',
             }}
-            onMouseEnter={e => e.target.style.background = '#e5e7eb'}
-            onMouseLeave={e => e.target.style.background = '#f3f4f6'}
+            onMouseEnter={e => e.target.style.background = 'var(--bg-secondary)'}
+            onMouseLeave={e => e.target.style.background = 'var(--bg-tertiary)'}
           >
             Fechar
           </button>

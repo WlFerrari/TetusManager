@@ -4,7 +4,7 @@ import { userCtrl } from '../../controllers/index.js'
 import { PERFIS_USUARIO } from '../../models/index.js'
 import {
   Badge, Modal, ConfirmDelete, FormField,
-  BtnPrimary, BtnSecondary, BtnIcon, CrudLabel, Avatar, SectionHeader, SearchInput,
+  BtnPrimary, BtnSecondary, BtnIcon, Avatar, SectionHeader, SearchInput,
 } from '../components/UI.jsx'
 
 const BLANK = { nome:'', email:'', perfil:'Vendedor', status:'Ativo', senha:'123456' }
@@ -33,7 +33,6 @@ export default function UsuariosPage({ onUpdate }) {
   const F = (k, v) => setForm(f => ({ ...f, [k]: v }))
   const closeModal = () => { setModal(null); setErros({}); setTarget(null) }
 
-  // [C] CREATE
   async function handleAdd() {
     const r = await userCtrl.criar(form)
     if (!r.ok) { setErros({ geral: r.msg }); return }
@@ -42,7 +41,6 @@ export default function UsuariosPage({ onUpdate }) {
     closeModal()
   }
 
-  // [U] UPDATE
   async function handleEdit() {
     const r = await userCtrl.atualizar(form.id, form)
     if (!r.ok) { setErros({ geral: r.msg }); return }
@@ -51,14 +49,12 @@ export default function UsuariosPage({ onUpdate }) {
     closeModal()
   }
 
-  // [D] DELETE lógico — toggle Ativo/Inativo
   async function handleToggle(id) {
     const r = await userCtrl.toggleStatus(id)
     onUpdate(r.msg, r.ok ? 'ok' : 'err')
     carregarUsuarios()
   }
 
-  // [D] DELETE físico
   async function handleDelete() {
     if (!target?.id) { onUpdate('Usuário não selecionado.', 'err'); closeModal(); return }
     const r = await userCtrl.excluir(target.id)
@@ -71,19 +67,17 @@ export default function UsuariosPage({ onUpdate }) {
     <div>
       <SectionHeader
         title="Usuários"
-        subtitle={`CRUD completo · delete físico e lógico (toggle status) · ${lista.length} registro(s)`}
+        subtitle={`${lista.length} registro(s)`}
         action={
           <BtnPrimary onClick={() => { setForm(BLANK); setModal('add') }}>
-            <Plus size={14} /> Novo Usuário <CrudLabel op="C" />
+            <Plus size={14} /> Novo Usuário
           </BtnPrimary>
         }
       />
 
-      {/* [R] READ — busca */}
-      <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nome, e-mail ou perfil… (READ)" />
+      <SearchInput value={search} onChange={setSearch} placeholder="Buscar por nome, e-mail ou perfil…" />
 
-      {/* [R] READ — tabela */}
-      <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f3f4f6', overflow: 'hidden' }}>
+      <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border-color)', overflow: 'hidden' }}>
         <table className="data-table">
           <thead>
             <tr>
@@ -91,19 +85,19 @@ export default function UsuariosPage({ onUpdate }) {
               <th>E-mail</th>
               <th>Perfil</th>
               <th>Status</th>
-              <th>Ações CRUD</th>
+              <th>Ações</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#d1d5db' }}>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)' }}>
                   Carregando...
                 </td>
               </tr>
             ) : lista.length === 0 ? (
               <tr>
-                <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: '#d1d5db', fontSize: 14 }}>
+                <td colSpan="5" style={{ textAlign: 'center', padding: '24px', color: 'var(--text-secondary)', fontSize: 14 }}>
                   Nenhum usuário encontrado.
                 </td>
               </tr>
@@ -113,37 +107,27 @@ export default function UsuariosPage({ onUpdate }) {
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
                       <Avatar name={u.nome} size={28} />
-                      <span style={{ fontSize: 13, fontWeight: 500, color: '#1f2937' }}>{u.nome}</span>
+                      <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{u.nome}</span>
                     </div>
                   </td>
-                  <td style={{ color: '#6b7280' }}>{u.email}</td>
-                  <td style={{ color: '#374151' }}>{u.perfil}</td>
+                  <td style={{ color: 'var(--text-secondary)' }}>{u.email}</td>
+                  <td style={{ color: 'var(--text-primary)' }}>{u.perfil}</td>
                   <td><Badge status={u.status} /></td>
                   <td>
                     <div style={{ display: 'flex', gap: 5 }}>
-                      {/* [U] UPDATE */}
-                      <BtnIcon title="UPDATE" onClick={() => { setForm({ ...u }); setModal('edit') }}>
+                      <BtnIcon title="Editar" onClick={() => { setForm({ ...u }); setModal('edit') }}>
                         <Edit2 size={13} />
                       </BtnIcon>
 
-                      {/* [D] DELETE lógico — inativar/ativar */}
-                      <button
-                        title={`DELETE lógico: ${u.status === 'Ativo' ? 'inativar' : 'ativar'} usuário`}
+                      <BtnIcon
+                        title={u.status === 'Ativo' ? 'Inativar' : 'Ativar'}
                         onClick={() => handleToggle(u.id)}
-                        style={{
-                          display: 'flex', alignItems: 'center', gap: 4,
-                          padding: '4px 9px', border: '1px solid #e5e7eb', borderRadius: 6,
-                          background: '#fff', cursor: 'pointer', fontSize: 11,
-                          color: u.status === 'Ativo' ? '#92400e' : '#065f46', fontWeight: 500,
-                        }}
+                        danger={u.status === 'Ativo'}
                       >
                         {u.status === 'Ativo' ? <UserX size={13} /> : <UserCheck size={13} />}
-                        {u.status === 'Ativo' ? 'Inativar' : 'Ativar'}
-                        <CrudLabel op="D" />
-                      </button>
+                      </BtnIcon>
 
-                      {/* [D] DELETE físico */}
-                      <BtnIcon title="DELETE físico" danger onClick={() => { setTarget(u); setModal('del') }}>
+                      <BtnIcon title="Excluir" danger onClick={() => { setTarget(u); setModal('del') }}>
                         <Trash2 size={13} />
                       </BtnIcon>
                     </div>
@@ -155,14 +139,8 @@ export default function UsuariosPage({ onUpdate }) {
         </table>
       </div>
 
-      {/* Modal CREATE / UPDATE */}
       {(modal === 'add' || modal === 'edit') && (
-        <Modal title={modal === 'add' ? 'Novo Usuário (CREATE)' : 'Editar Usuário (UPDATE)'} onClose={closeModal}>
-          <div style={{ background: modal === 'add' ? '#eff6ff' : '#fefce8', borderRadius: 8, padding: '7px 12px', fontSize: 12, color: modal === 'add' ? '#1e40af' : '#92400e', marginBottom: 14, fontWeight: 500 }}>
-            <CrudLabel op={modal === 'add' ? 'C' : 'U'} />
-            {' '}{modal === 'add' ? 'userCtrl.criar(data)' : `userCtrl.atualizar(${form.id}, data)`}
-          </div>
-
+        <Modal title={modal === 'add' ? 'Novo Usuário' : 'Editar Usuário'} onClose={closeModal}>
           {erros.geral && <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{erros.geral}</p>}
 
           <FormField label="Nome completo *">
@@ -198,7 +176,6 @@ export default function UsuariosPage({ onUpdate }) {
         </Modal>
       )}
 
-      {/* Confirm DELETE físico */}
       {modal === 'del' && target && (
         <ConfirmDelete
           message={`Excluir permanentemente o usuário "${target?.nome || 'sem nome'}"? Esta ação não pode ser desfeita.`}
