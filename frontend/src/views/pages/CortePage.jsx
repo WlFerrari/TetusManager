@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react'
 import { Scissors, QrCode, X, CheckCircle } from 'lucide-react'
-import { chapaCtrl, retalhoCtrl } from '../../controllers/index.js'
+import { chapaCtrl, corteCtrl } from '../../controllers/index.js'
 import { FormField, BtnPrimary } from '../components/UI.jsx'
 
 export default function CortePage({ onUpdate }) {
-  const [form, setForm] = useState({ chapaId: '', cc: '', lc: '', obs: '' })
+  const [form, setForm] = useState({ osNumero: '', chapaId: '', cc: '', lc: '', obs: '' })
   const [done, setDone] = useState(null)
   const [chapas, setChapas] = useState([])
   const [loading, setLoading] = useState(false)
@@ -36,25 +36,30 @@ export default function CortePage({ onUpdate }) {
 
   async function handleSalvar() {
     if (!calc || !calc.ok) return
-    const r = await retalhoCtrl.gravarRetalho(calc.retalho)
+    const r = await corteCtrl.registrarCorte({
+      osNumero: form.osNumero,
+      chapaId: form.chapaId,
+      comprimentoConsumido: form.cc,
+      larguraConsumida: form.lc,
+      observacao: form.obs,
+      retalhos: [calc.retalho],
+    })
     if (r.ok) {
-      setDone(r.data)
-      setForm({ chapaId: '', cc: '', lc: '', obs: '' })
+      const retalho = Array.isArray(r.data) ? r.data[0] : r.data
+      setDone(retalho)
+      setForm({ osNumero: '', chapaId: '', cc: '', lc: '', obs: '' })
       onUpdate(r.msg, 'ok')
     } else {
       onUpdate(r.msg, 'err')
     }
   }
 
-  const canSave = calc?.ok
+  const canSave = calc?.ok && !!form.osNumero?.trim()
 
   return (
     <div>
       <div style={{ marginBottom: 18 }}>
         <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Registrar Corte</h2>
-        <p style={{ fontSize: 12, color: '#6b7280' }}>
-          ChapaCtrl.calcularCorte() → RetalhoCtrl.gravarRetalho()
-        </p>
       </div>
 
       {/* Sucesso */}
@@ -80,6 +85,10 @@ export default function CortePage({ onUpdate }) {
         {/* Formulário */}
         <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f3f4f6', padding: 18 }}>
           <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 14 }}>Dados do Corte</p>
+
+          <FormField label="Número da OS">
+            <input value={form.osNumero} onChange={e => F('osNumero', e.target.value)} placeholder="OS-000123" />
+          </FormField>
 
           <FormField label="Chapa de Origem">
             <select value={form.chapaId} onChange={e => F('chapaId', e.target.value)} disabled={loading}>

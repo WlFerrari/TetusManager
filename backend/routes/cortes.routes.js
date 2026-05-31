@@ -7,5 +7,15 @@ router.post('/', authMiddleware, requirePerm('registrarCorte'), (req, res, next)
   CortesController.registrar(req, res, next)
 })
 
+/** GET /api/cortes?chapaId=&retalhoId=&osNumero=&limit= */
+router.get('/', authMiddleware, requirePerm('verEstoque'), (req, res, next) => {
+  CortesController.list(req, res, next)
+})
+
+/** GET /api/cortes/stats */
+router.get('/stats', authMiddleware, requirePerm('verRelatorios'), (req, res, next) => {
+  CortesController.stats(req, res, next)
+})
+
 module.exports = router
 

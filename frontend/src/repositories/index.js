@@ -4,8 +4,8 @@
  * Todas as operações vão para o backend e são persistidas em PostgreSQL.
  */
 
-import { ChapaService, RetalhoService, UsuarioService, EmpresaService } from '../services/api.js'
-import { mkChapa, mkRetalho, mkUser, mkEmpresa } from '../models/index.js'
+import { ChapaService, RetalhoService, UsuarioService, EmpresaService, CorteService } from '../services/api.js'
+import { mkChapa, mkRetalho, mkUser, mkEmpresa, mkCorte } from '../models/index.js'
 
 // ── Repositório de Chapas (com API real) ──────────────────────────────
 export const chapaRepo = {
@@ -72,9 +72,31 @@ export const retalhoRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkRetalho(res.data)
   },
+  marcarDescartado: async (id) => {
+    const res = await RetalhoService.marcarDescartado(id)
+    if (!res.ok) throw new Error(res.msg)
+    return mkRetalho(res.data)
+  },
   stats: async () => {
     const res = await RetalhoService.stats()
-    return res.ok ? res.data : { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, areaTotal: 0 }
+    return res.ok ? res.data : { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, descartados: 0, areaTotal: 0 }
+  },
+}
+
+// ── Repositório de Cortes (com API real) ───────────────────────────────
+export const corteRepo = {
+  registrar: async (data) => {
+    const res = await CorteService.registrar(data)
+    if (!res.ok) throw new Error(res.msg)
+    return { data: res.data, cortes: (res.cortes || []).map(mkCorte) }
+  },
+  listar: async (filters = {}) => {
+    const res = await CorteService.listar(filters)
+    return res.ok ? res.data.map(mkCorte) : []
+  },
+  stats: async () => {
+    const res = await CorteService.stats()
+    return res.ok ? res.data : { total: 0, areaConsumida: 0, areaRetalho: 0 }
   },
 }
 

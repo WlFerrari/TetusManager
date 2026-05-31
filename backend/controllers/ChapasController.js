@@ -3,7 +3,7 @@ const ChapaRepo = require('../repositories/ChapaRepository')
 class ChapasController {
   async list(req, res, next) {
     try {
-      const data = await ChapaRepo.findAll(req.query.q || '')
+      const data = await ChapaRepo.findAll(req.query || '')
       res.json({ ok: true, data })
     } catch (e) { next(e) }
   }

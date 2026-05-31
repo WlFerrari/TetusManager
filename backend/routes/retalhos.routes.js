@@ -20,6 +20,9 @@ router.put('/:id', authMiddleware, requirePerm('editarEstoque'), (req, res, next
 /** PATCH /api/retalhos/:id/consumir — DELETE lógico */
 router.patch('/:id/consumir', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.consume(req, res, next))
 
+/** PATCH /api/retalhos/:id/descartar — DESCARTE lógico */
+router.patch('/:id/descartar', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.discard(req, res, next))
+
 /** DELETE /api/retalhos/:id — DELETE físico */
 router.delete('/:id', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.delete(req, res, next))
 

@@ -36,6 +36,7 @@ CREATE TABLE IF NOT EXISTS chapas (
   status       VARCHAR(20)   NOT NULL DEFAULT 'Disponível'
                CHECK (status IN ('Disponível','Em uso','Esgotado')),
   qr_code      TEXT,
+  foto         TEXT,
   criado_por   INTEGER       REFERENCES usuarios(id) ON DELETE SET NULL,
   criado_em    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ  NOT NULL DEFAULT NOW()
@@ -53,12 +54,31 @@ CREATE TABLE IF NOT EXISTS retalhos (
   espessura    NUMERIC(4,2)  NOT NULL DEFAULT 2,
   area         NUMERIC(10,4) NOT NULL DEFAULT 0,   -- m², calculado automaticamente
   status       VARCHAR(20)   NOT NULL DEFAULT 'Disponível'
-               CHECK (status IN ('Disponível','Reservado','Consumido')),
+               CHECK (status IN ('Disponível','Reservado','Consumido','Descartado')),
   qr_code      TEXT,
+  foto         TEXT,
   criado_por   INTEGER       REFERENCES usuarios(id) ON DELETE SET NULL,
   consumido_por INTEGER      REFERENCES usuarios(id) ON DELETE SET NULL,
+  consumido_em TIMESTAMPTZ,
+  descartado_por INTEGER     REFERENCES usuarios(id) ON DELETE SET NULL,
+  descartado_em TIMESTAMPTZ,
   criado_em    TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
   atualizado_em TIMESTAMPTZ  NOT NULL DEFAULT NOW()
+);
+
+-- ── Tabela: cortes ────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS cortes (
+  id                    SERIAL        PRIMARY KEY,
+  os_numero             VARCHAR(40)   NOT NULL,
+  chapa_id              VARCHAR(20)   REFERENCES chapas(id) ON DELETE SET NULL,
+  retalho_id            VARCHAR(20)   REFERENCES retalhos(id) ON DELETE SET NULL,
+  comprimento_consumido NUMERIC(8,2)  NOT NULL CHECK (comprimento_consumido > 0),
+  largura_consumida     NUMERIC(8,2)  NOT NULL CHECK (largura_consumida > 0),
+  area_consumida        NUMERIC(10,4) NOT NULL DEFAULT 0,
+  area_retalho          NUMERIC(10,4) NOT NULL DEFAULT 0,
+  observacao            TEXT,
+  criado_por            INTEGER       REFERENCES usuarios(id) ON DELETE SET NULL,
+  criado_em             TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 -- ── Tabela: empresa ───────────────────────────────────────────────────
@@ -107,3 +127,6 @@ CREATE INDEX IF NOT EXISTS idx_retalhos_origem   ON retalhos (origem);
 CREATE INDEX IF NOT EXISTS idx_chapas_criado_por ON chapas (criado_por);
 CREATE INDEX IF NOT EXISTS idx_retalhos_criado_por ON retalhos (criado_por);
 CREATE INDEX IF NOT EXISTS idx_retalhos_consumido_por ON retalhos (consumido_por);
+CREATE INDEX IF NOT EXISTS idx_cortes_chapa_id ON cortes (chapa_id);
+CREATE INDEX IF NOT EXISTS idx_cortes_retalho_id ON cortes (retalho_id);
+CREATE INDEX IF NOT EXISTS idx_cortes_os_numero ON cortes (os_numero);

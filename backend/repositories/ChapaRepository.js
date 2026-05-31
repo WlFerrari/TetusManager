@@ -18,6 +18,7 @@ function toModel(row) {
     espessura:   Number(row.espessura),
     status:      row.status,
     qrCode:      row.qr_code,
+    foto:        row.foto || null,
     criadoPor:   row.criado_por || null,
     criadoEm:    new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
@@ -48,24 +49,50 @@ const ChapaRepository = {
       espessura: data.espessura,
     })
     const { rows } = await query(`
-      INSERT INTO chapas (id, nome, tipo, cor, largura, comprimento, espessura, status, qr_code, criado_por)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+      INSERT INTO chapas (id, nome, tipo, cor, largura, comprimento, espessura, status, qr_code, foto, criado_por)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
       RETURNING *
-    `, [id, data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.criadoPor || null])
+    `, [id, data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.foto || null, data.criadoPor || null])
     return toModel(rows[0])
   },
 
   /** [R] READ ALL — com filtro opcional */
-  async findAll(filtro = '') {
-    if (filtro) {
-      const { rows } = await query(`
-        SELECT * FROM chapas
-        WHERE nome ILIKE $1 OR tipo ILIKE $1 OR id ILIKE $1
-        ORDER BY criado_em DESC
-      `, [`%${filtro}%`])
+  async findAll(filtros = '') {
+    if (typeof filtros === 'string') {
+      if (filtros) {
+        const { rows } = await query(`
+          SELECT * FROM chapas
+          WHERE nome ILIKE $1 OR tipo ILIKE $1 OR id ILIKE $1
+          ORDER BY criado_em DESC
+        `, [`%${filtros}%`])
+        return rows.map(toModel)
+      }
+      const { rows } = await query('SELECT * FROM chapas ORDER BY criado_em DESC')
       return rows.map(toModel)
     }
-    const { rows } = await query('SELECT * FROM chapas ORDER BY criado_em DESC')
+
+    const {
+      q, tipo, cor, espessura, status,
+      minLargura, minComprimento,
+    } = filtros || {}
+
+    const where = []
+    const params = []
+    const add = (sql, val) => {
+      params.push(val)
+      where.push(sql.replace('$', `$${params.length}`))
+    }
+
+    if (q) add('(nome ILIKE $ OR tipo ILIKE $ OR id ILIKE $)', `%${q}%`)
+    if (tipo) add('tipo ILIKE $', `%${tipo}%`)
+    if (status) add('status = $', status)
+    if (cor) add('cor ILIKE $', `%${cor}%`)
+    if (+espessura > 0) add('espessura = $', Number(espessura))
+    if (+minLargura > 0) add('largura >= $', Number(minLargura))
+    if (+minComprimento > 0) add('comprimento >= $', Number(minComprimento))
+
+    const sql = `SELECT * FROM chapas ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY criado_em DESC`
+    const { rows } = await query(sql, params)
     return rows.map(toModel)
   },
 
@@ -108,10 +135,10 @@ const ChapaRepository = {
     const { rows } = await query(`
       UPDATE chapas
       SET nome=$1, tipo=$2, cor=$3, largura=$4, comprimento=$5, espessura=$6, status=$7,
-          qr_code=COALESCE($8, qr_code)
-      WHERE id=$9
+          qr_code=COALESCE($8, qr_code), foto=COALESCE($9, foto)
+      WHERE id=$10
       RETURNING *
-    `, [data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, id])
+    `, [data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.foto || null, id])
     if (!rows[0]) throw new Error(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
   },
@@ -139,13 +166,15 @@ const ChapaRepository = {
       SELECT
         COUNT(*)                                       AS total,
         COUNT(*) FILTER (WHERE status='Disponível')   AS disponiveis,
-        COUNT(*) FILTER (WHERE status='Em uso')       AS em_uso
+        COUNT(*) FILTER (WHERE status='Em uso')       AS em_uso,
+        COALESCE(SUM((largura * comprimento) / 10000), 0) AS area_total
       FROM chapas
     `)
     return {
       total:       Number(rows[0].total),
       disponiveis: Number(rows[0].disponiveis),
       emUso:       Number(rows[0].em_uso),
+      areaTotal:   parseFloat(Number(rows[0].area_total).toFixed(2)),
     }
   },
 }

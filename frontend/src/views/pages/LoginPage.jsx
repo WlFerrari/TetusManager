@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
-import { Layers } from 'lucide-react'
 import { AuthService, tokenStorage } from '../../services/api.js'
+import logo from '../../assets/logo.png'
 
 export default function LoginPage({ onLogin }) {
   const [email, setEmail] = useState('')
@@ -27,8 +27,8 @@ export default function LoginPage({ onLogin }) {
       <div style={{ width:'100%', maxWidth:400 }}>
         <div style={{ background:'#fff', borderRadius:20, padding:'36px 32px', boxShadow:'0 8px 32px rgba(0,0,0,.1)' }}>
           <div style={{ textAlign:'center', marginBottom:24 }}>
-            <div style={{ width:50, height:50, background:'#2563eb', borderRadius:13, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', margin:'0 auto 12px' }}>
-              <Layers size={24}/>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'center', margin:'0 auto 12px' }}>
+              <img src={logo} alt="Tetus Marmoraria" style={{ width: 72, height: 72, objectFit: 'contain' }} />
             </div>
             <h1 style={{ fontSize:20, fontWeight:800, color:'#0f172a', lineHeight:1.3 }}>Acessar o<br/>Painel Operacional</h1>
             <p style={{ fontSize:13, color:'#94a3b8', marginTop:4 }}>Utilize suas credenciais corporativas</p>
@@ -51,11 +51,6 @@ export default function LoginPage({ onLogin }) {
             </button>
           </form>
           <p style={{ textAlign:'center', fontSize:11, color:'#94a3b8', marginTop:18 }}>Problemas para acessar? Contate o administrador.</p>
-          <div style={{ marginTop:14, background:'#f8fafc', borderRadius:10, padding:'10px 14px', fontSize:11, color:'#94a3b8' }}>
-            <p style={{ fontWeight:600, color:'#475569', marginBottom:4 }}>Usuários de teste (senha: <code style={{ background:'#e2e8f0', padding:'0 4px', borderRadius:3 }}>123456</code>):</p>
-            <p>joao.silva@tetus.com — Administrador</p>
-            <p>pedro.costa@tetus.com — Vendedor</p>
-          </div>
         </div>
       </div>
     </div>

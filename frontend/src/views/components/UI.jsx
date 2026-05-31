@@ -8,17 +8,24 @@ import { X, Trash2 } from 'lucide-react'
 
 // ── Status Badge ──────────────────────────────────────────────────────
 const STATUS_COLORS = {
-  'Disponível': { bg: '#d1fae5', color: '#065f46' },
-  'Em uso':     { bg: '#fef3c7', color: '#92400e' },
-  'Reservado':  { bg: '#dbeafe', color: '#1e40af' },
-  'Consumido':  { bg: '#f3f4f6', color: '#374151' },
-  'Esgotado':   { bg: '#fee2e2', color: '#991b1b' },
-  'Ativo':      { bg: '#d1fae5', color: '#065f46' },
-  'Inativo':    { bg: '#fee2e2', color: '#991b1b' },
+  'disponivel': { bg: '#d1fae5', color: '#065f46' },
+  'em uso':     { bg: '#fef3c7', color: '#92400e' },
+  'reservado':  { bg: '#dbeafe', color: '#1e40af' },
+  'consumido':  { bg: '#f3f4f6', color: '#374151' },
+  'descartado': { bg: '#fee2e2', color: '#991b1b' },
+  'esgotado':   { bg: '#fee2e2', color: '#991b1b' },
+  'ativo':      { bg: '#d1fae5', color: '#065f46' },
+  'inativo':    { bg: '#fee2e2', color: '#991b1b' },
 }
 
+const normalizeStatus = (value) => (value || '')
+  .normalize('NFD')
+  .replace(/\p{Diacritic}/gu, '')
+  .toLowerCase()
+
 export function Badge({ status }) {
-  const s = STATUS_COLORS[status] || { bg: '#f3f4f6', color: '#374151' }
+  const key = normalizeStatus(status)
+  const s = STATUS_COLORS[key] || { bg: '#f3f4f6', color: '#374151' }
   return (
     <span style={{
       display: 'inline-block',

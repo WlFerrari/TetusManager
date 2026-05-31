@@ -43,6 +43,7 @@ export const mkChapa = (data = {}) => ({
   espessura: Number(data.espessura) || 2,
   status: data.status || 'Disponível',
   qrCode: data.qrCode || data.qr_code || '',
+  foto: data.foto || null,
   criadoEm: data.criadoEm || new Date().toLocaleDateString('pt-BR'),
 })
 
@@ -58,6 +59,22 @@ export const mkRetalho = (data = {}) => ({
   area: Number(data.area) || 0,
   status: data.status || 'Disponível',
   qrCode: data.qrCode || data.qr_code || '',
+  foto: data.foto || null,
+  consumidoEm: data.consumidoEm || null,
+  descartadoEm: data.descartadoEm || null,
+  criadoEm: data.criadoEm || new Date().toLocaleDateString('pt-BR'),
+})
+
+export const mkCorte = (data = {}) => ({
+  id: data.id || Date.now(),
+  osNumero: data.osNumero || data.os_numero || '',
+  chapaId: data.chapaId || data.chapa_id || '',
+  retalhoId: data.retalhoId || data.retalho_id || '',
+  comprimentoConsumido: Number(data.comprimentoConsumido || data.comprimento_consumido) || 0,
+  larguraConsumida: Number(data.larguraConsumida || data.largura_consumida) || 0,
+  areaConsumida: Number(data.areaConsumida || data.area_consumida) || 0,
+  areaRetalho: Number(data.areaRetalho || data.area_retalho) || 0,
+  observacao: data.observacao || '',
   criadoEm: data.criadoEm || new Date().toLocaleDateString('pt-BR'),
 })
 
@@ -94,4 +111,4 @@ export const mkEmpresa = (data = {}) => ({
 export const TIPOS_ROCHA    = ['Granito', 'Mármore', 'Quartzito', 'Ardósia', 'Pedra Sabão']
 export const PERFIS_USUARIO = ['Administrador', 'Estoquista', 'Vendedor']
 export const STATUS_CHAPA   = ['Disponível', 'Em uso', 'Esgotado']
-export const STATUS_RETALHO = ['Disponível', 'Reservado', 'Consumido']
+export const STATUS_RETALHO = ['Disponível', 'Reservado', 'Consumido', 'Descartado']

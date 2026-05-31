@@ -42,6 +42,16 @@ const put    = (path, body)   => apiFetch(path, { method:'PUT',    body: JSON.st
 const patch  = (path, body)   => apiFetch(path, { method:'PATCH',  body: JSON.stringify(body) })
 const del    = (path)         => apiFetch(path, { method:'DELETE' })
 
+const toQueryString = (params = {}) => {
+  const qp = new URLSearchParams()
+  Object.entries(params).forEach(([k, v]) => {
+    if (v === undefined || v === null || v === '') return
+    qp.set(k, String(v))
+  })
+  const s = qp.toString()
+  return s ? `?${s}` : ''
+}
+
 // ════════════════════════════════════════════════════════════════════════
 // AUTH
 // ════════════════════════════════════════════════════════════════════════
@@ -54,7 +64,12 @@ export const AuthService = {
 // CHAPAS
 // ════════════════════════════════════════════════════════════════════════
 export const ChapaService = {
-  listar:   (q = '')  => get(`/chapas${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  listar:   (qOrFilters = '')  => {
+    if (typeof qOrFilters === 'string') {
+      return get(`/chapas${qOrFilters ? `?q=${encodeURIComponent(qOrFilters)}` : ''}`)
+    }
+    return get(`/chapas${toQueryString(qOrFilters)}`)
+  },
   listarDisponiveis: () => get('/chapas/disponiveis'),
   buscar:   (id)      => get(`/chapas/${id}`),
   stats:    ()        => get('/chapas/stats'),
@@ -67,12 +82,18 @@ export const ChapaService = {
 // RETALHOS
 // ════════════════════════════════════════════════════════════════════════
 export const RetalhoService = {
-  listar:         (q = '')  => get(`/retalhos${q ? `?q=${encodeURIComponent(q)}` : ''}`),
+  listar:         (qOrFilters = '')  => {
+    if (typeof qOrFilters === 'string') {
+      return get(`/retalhos${qOrFilters ? `?q=${encodeURIComponent(qOrFilters)}` : ''}`)
+    }
+    return get(`/retalhos${toQueryString(qOrFilters)}`)
+  },
   buscar:         (id)      => get(`/retalhos/${id}`),
   stats:          ()        => get('/retalhos/stats'),
   criar:          (data)    => post('/retalhos', data),
   atualizar:      (id,data) => put(`/retalhos/${id}`, data),
   marcarConsumido:(id)      => patch(`/retalhos/${id}/consumir`, {}),
+  marcarDescartado:(id)     => patch(`/retalhos/${id}/descartar`, {}),
   excluir:        (id)      => del(`/retalhos/${id}`),
 }
 
@@ -81,6 +102,8 @@ export const RetalhoService = {
 // ════════════════════════════════════════════════════════════════════════
 export const CorteService = {
   registrar:(data) => post('/cortes', data),
+  listar:(filters = {}) => get(`/cortes${toQueryString(filters)}`),
+  stats:() => get('/cortes/stats'),
 }
 
 // ════════════════════════════════════════════════════════════════════════

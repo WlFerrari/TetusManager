@@ -18,8 +18,12 @@ function toModel(row) {
     area:        Number(row.area),
     status:      row.status,
     qrCode:      row.qr_code,
+    foto:        row.foto || null,
     criadoPor:   row.criado_por || null,
     consumidoPor: row.consumido_por || null,
+    consumidoEm: row.consumido_em ? new Date(row.consumido_em).toLocaleDateString('pt-BR') : null,
+    descartadoPor: row.descartado_por || null,
+    descartadoEm: row.descartado_em ? new Date(row.descartado_em).toLocaleDateString('pt-BR') : null,
     criadoEm:    new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
 }
@@ -56,11 +60,11 @@ const RetalhoRepository = {
       origem: data.origem || null,
     })
     const { rows } = await query(`
-      INSERT INTO retalhos (id, origem, nome, tipo, cor, largura, comprimento, espessura, area, status, qr_code, criado_por)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+      INSERT INTO retalhos (id, origem, nome, tipo, cor, largura, comprimento, espessura, area, status, qr_code, foto, criado_por)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13)
       RETURNING *
     `, [id, data.origem||null, nome, tipo, cor,
-        data.largura, data.comprimento, espessura, area, status, qrCode, data.criadoPor || null])
+        data.largura, data.comprimento, espessura, area, status, qrCode, data.foto || null, data.criadoPor || null])
     return toModel(rows[0])
   },
 
@@ -70,16 +74,44 @@ const RetalhoRepository = {
   },
 
   /** [R] READ ALL */
-  async findAll(filtro = '') {
-    if (filtro) {
-      const { rows } = await query(`
-        SELECT * FROM retalhos
-        WHERE nome ILIKE $1 OR id ILIKE $1 OR status ILIKE $1
-        ORDER BY criado_em DESC
-      `, [`%${filtro}%`])
+  async findAll(filtros = '') {
+    if (typeof filtros === 'string') {
+      if (filtros) {
+        const { rows } = await query(`
+          SELECT * FROM retalhos
+          WHERE nome ILIKE $1 OR id ILIKE $1 OR status ILIKE $1
+          ORDER BY criado_em DESC
+        `, [`%${filtros}%`])
+        return rows.map(toModel)
+      }
+      const { rows } = await query('SELECT * FROM retalhos ORDER BY criado_em DESC')
       return rows.map(toModel)
     }
-    const { rows } = await query('SELECT * FROM retalhos ORDER BY criado_em DESC')
+
+    const {
+      q, tipo, cor, espessura, status, origem,
+      minLargura, minComprimento, minArea,
+    } = filtros || {}
+
+    const where = []
+    const params = []
+    const add = (sql, val) => {
+      params.push(val)
+      where.push(sql.replace('$', `$${params.length}`))
+    }
+
+    if (q) add('(nome ILIKE $ OR id ILIKE $ OR status ILIKE $)', `%${q}%`)
+    if (tipo) add('tipo ILIKE $', `%${tipo}%`)
+    if (status) add('status = $', status)
+    if (origem) add('origem = $', origem)
+    if (cor) add('cor ILIKE $', `%${cor}%`)
+    if (+espessura > 0) add('espessura = $', Number(espessura))
+    if (+minLargura > 0) add('largura >= $', Number(minLargura))
+    if (+minComprimento > 0) add('comprimento >= $', Number(minComprimento))
+    if (+minArea > 0) add('area >= $', Number(minArea))
+
+    const sql = `SELECT * FROM retalhos ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY criado_em DESC`
+    const { rows } = await query(sql, params)
     return rows.map(toModel)
   },
 
@@ -115,11 +147,11 @@ const RetalhoRepository = {
     const { rows } = await query(`
       UPDATE retalhos
       SET nome=$1, tipo=$2, cor=$3, largura=$4, comprimento=$5,
-          espessura=$6, area=$7, status=$8, qr_code=COALESCE($9, qr_code)
-      WHERE id=$10
+          espessura=$6, area=$7, status=$8, qr_code=COALESCE($9, qr_code), foto=COALESCE($10, foto)
+      WHERE id=$11
       RETURNING *
     `, [nome, tipo, cor, data.largura, data.comprimento,
-        espessura, area, status, qrCode, id])
+        espessura, area, status, qrCode, data.foto || null, id])
     if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
@@ -134,8 +166,21 @@ const RetalhoRepository = {
   /** [D] DELETE lógico — soft delete */
   async marcarConsumido(id, consumidoPor) {
     const { rows } = await query(`
-      UPDATE retalhos SET status='Consumido', consumido_por=$2 WHERE id=$1 RETURNING *
+      UPDATE retalhos
+      SET status='Consumido', consumido_por=$2, consumido_em=NOW()
+      WHERE id=$1 RETURNING *
     `, [id, consumidoPor || null])
+    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
+    return toModel(rows[0])
+  },
+
+  /** [D] DESCARTAR — marca como descartado (histórico) */
+  async marcarDescartado(id, descartadoPor) {
+    const { rows } = await query(`
+      UPDATE retalhos
+      SET status='Descartado', descartado_por=$2, descartado_em=NOW()
+      WHERE id=$1 RETURNING *
+    `, [id, descartadoPor || null])
     if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
@@ -148,6 +193,7 @@ const RetalhoRepository = {
         COUNT(*) FILTER (WHERE status='Disponível')     AS disponiveis,
         COUNT(*) FILTER (WHERE status='Reservado')      AS reservados,
         COUNT(*) FILTER (WHERE status='Consumido')      AS consumidos,
+        COUNT(*) FILTER (WHERE status='Descartado')     AS descartados,
         COALESCE(SUM(area), 0)                          AS area_total
       FROM retalhos
     `)
@@ -156,6 +202,7 @@ const RetalhoRepository = {
       disponiveis: Number(rows[0].disponiveis),
       reservados:  Number(rows[0].reservados),
       consumidos:  Number(rows[0].consumidos),
+      descartados: Number(rows[0].descartados),
       areaTotal:   parseFloat(Number(rows[0].area_total).toFixed(2)),
     }
   },

@@ -4,7 +4,7 @@ const RetalhoRepo = require('../repositories/RetalhoRepository')
 class RetalhosController {
   async list(req, res, next) {
     try {
-      const data = await RetalhoRepo.findAll(req.query.q || '')
+      const data = await RetalhoRepo.findAll(req.query || '')
       res.json({ ok: true, data })
     } catch (e) { next(e) }
   }
@@ -104,6 +104,17 @@ class RetalhosController {
         ok: true,
         data,
         msg: 'Retalho marcado como consumido!'
+      })
+    } catch (e) { next(e) }
+  }
+
+  async discard(req, res, next) {
+    try {
+      const data = await RetalhoRepo.marcarDescartado(req.params.id, req.user?.id || null)
+      res.json({
+        ok: true,
+        data,
+        msg: 'Retalho descartado do inventário!'
       })
     } catch (e) { next(e) }
   }

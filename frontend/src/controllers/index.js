@@ -5,8 +5,8 @@
  * Retorno: { ok: 1|0, data?, msg }
  */
 
-import { chapaRepo, retalhoRepo, userRepo, empresaRepo } from '../repositories/index.js'
-import { PERMISSOES_PADRAO, mkChapa, mkRetalho } from '../models/index.js'
+import { chapaRepo, retalhoRepo, userRepo, empresaRepo, corteRepo } from '../repositories/index.js'
+import { mkChapa, mkRetalho } from '../models/index.js'
 
 const buildChapaQrPayload = (data = {}) => {
   return `CHAPA|ID:${data.id}|Nome:${data.nome}|Tipo:${data.tipo}|Status:${data.status}|Dimensões:${data.largura}x${data.comprimento}x${data.espessura}mm`
@@ -203,11 +203,20 @@ class RetalhoController {
     }
   }
 
+  async marcarDescartado(id) {
+    try {
+      const e = await this.r.marcarDescartado(id)
+      return {ok:1,data:e,msg:'Retalho descartado!'}
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
+  }
+
   async stats() {
     try {
       return await this.r.stats()
     } catch(err) {
-      return { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, areaTotal: 0 }
+      return { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, descartados: 0, areaTotal: 0 }
     }
   }
 }
@@ -327,8 +336,45 @@ class EmpresaController {
   }
 }
 
+// ── CorteController ────────────────────────────────────────────────────
+class CorteController {
+  constructor(r) { this.r = r }
+
+  async registrarCorte(payload) {
+    if (!payload?.chapaId) return { ok: 0, msg: 'Chapa é obrigatória.' }
+    if (!payload?.osNumero?.trim()) return { ok: 0, msg: 'Número da OS é obrigatório.' }
+    if (!(+payload.comprimentoConsumido > 0 && +payload.larguraConsumida > 0)) {
+      return { ok: 0, msg: 'Dimensões consumidas inválidas.' }
+    }
+    try {
+      const res = await this.r.registrar(payload)
+      return { ok: 1, data: res.data, cortes: res.cortes, msg: 'Corte registrado com sucesso!' }
+    } catch (e) {
+      return { ok: 0, msg: e.message }
+    }
+  }
+
+  async listar(filters = {}) {
+    try {
+      const data = await this.r.listar(filters)
+      return { ok: 1, data }
+    } catch (e) {
+      return { ok: 0, data: [], msg: e.message }
+    }
+  }
+
+  async stats() {
+    try {
+      return await this.r.stats()
+    } catch (e) {
+      return { total: 0, areaConsumida: 0, areaRetalho: 0 }
+    }
+  }
+}
+
 // ── Exports ───────────────────────────────────────────────────────────
 export const chapaCtrl   = new ChapaController(chapaRepo)
 export const retalhoCtrl = new RetalhoController(retalhoRepo)
 export const userCtrl    = new UserController(userRepo)
 export const empresaCtrl = new EmpresaController(empresaRepo)
+export const corteCtrl   = new CorteController(corteRepo)
