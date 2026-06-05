@@ -3,6 +3,7 @@
  */
 
 const { query } = require('../database/connection')
+const { NotFoundError } = require('../utils/AppError')
 
 function toModel(row) {
   if (!row) return null
@@ -157,14 +158,14 @@ const RetalhoRepository = {
       RETURNING *
     `, [nome, tipo, cor, data.largura, data.comprimento,
         espessura, area, status, qrCode, data.foto || null, id])
-    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado.`)
     return toModel(rows[0])
   },
 
   /** [D] DELETE físico */
   async delete(id) {
     const { rows } = await query('DELETE FROM retalhos WHERE id=$1 RETURNING *', [id])
-    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado.`)
     return toModel(rows[0])
   },
 
@@ -175,7 +176,7 @@ const RetalhoRepository = {
       SET status='Consumido', consumido_por=$2, consumido_em=NOW()
       WHERE id=$1 RETURNING *
     `, [id, consumidoPor || null])
-    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado.`)
     return toModel(rows[0])
   },
 
@@ -186,7 +187,7 @@ const RetalhoRepository = {
       SET status='Descartado', descartado_por=$2, descartado_em=NOW()
       WHERE id=$1 RETURNING *
     `, [id, descartadoPor || null])
-    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado.`)
     return toModel(rows[0])
   },
 

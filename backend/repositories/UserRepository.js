@@ -4,6 +4,7 @@
 
 const { query } = require('../database/connection')
 const bcrypt    = require('bcryptjs')
+const { NotFoundError } = require('../utils/AppError')
 
 function toModel(row) {
   if (!row) return null
@@ -74,7 +75,7 @@ const UserRepository = {
       WHERE id=$5
       RETURNING *
     `, [data.nome, data.telefone||'', data.cargo||'', data.foto||null, id])
-    if (!rows[0]) throw new Error('Usuário não encontrado')
+    if (!rows[0]) throw new NotFoundError('Usuário não encontrado.')
     return toModel(rows[0])
   },
 
@@ -86,7 +87,7 @@ const UserRepository = {
       WHERE id=$7
       RETURNING *
     `, [data.nome, data.email, data.perfil, data.status, data.telefone||'', data.cargo||'', id])
-    if (!rows[0]) throw new Error('Usuário não encontrado')
+    if (!rows[0]) throw new NotFoundError('Usuário não encontrado.')
     return toModel(rows[0])
   },
 
@@ -98,7 +99,7 @@ const UserRepository = {
       WHERE id=$2
       RETURNING *
     `, [JSON.stringify(permissoes), id])
-    if (!rows[0]) throw new Error('Usuário não encontrado')
+    if (!rows[0]) throw new NotFoundError('Usuário não encontrado.')
     return toModel(rows[0])
   },
 
@@ -110,20 +111,21 @@ const UserRepository = {
       WHERE id=$1
       RETURNING *
     `, [id])
-    if (!rows[0]) throw new Error('Usuário não encontrado')
+    if (!rows[0]) throw new NotFoundError('Usuário não encontrado.')
     return toModel(rows[0])
   },
 
   /** [U] Alterar senha */
   async updateSenha(id, novaSenha) {
     const hash = await bcrypt.hash(novaSenha, 10)
-    await query('UPDATE usuarios SET senha_hash=$1 WHERE id=$2', [hash, id])
+    const { rowCount } = await query('UPDATE usuarios SET senha_hash=$1 WHERE id=$2', [hash, id])
+    if (rowCount === 0) throw new NotFoundError('Usuário não encontrado.')
   },
 
   /** [D] DELETE físico */
   async delete(id) {
     const { rows } = await query('DELETE FROM usuarios WHERE id=$1 RETURNING *', [id])
-    if (!rows[0]) throw new Error('Usuário não encontrado')
+    if (!rows[0]) throw new NotFoundError('Usuário não encontrado.')
     return toModel(rows[0])
   },
 }
