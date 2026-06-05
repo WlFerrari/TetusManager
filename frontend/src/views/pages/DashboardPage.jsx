@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { chapaCtrl, retalhoCtrl, userCtrl, corteCtrl } from '../../controllers/index.js'
 import { Package, Layers, CheckCircle, Users, Scissors } from 'lucide-react'
-import logo from '../../assets/logo.png'
 
 export default function DashboardPage() {
   const [cStats, setCStats] = useState({ total: 0, disponiveis: 0, emUso: 0, areaTotal: 0 })
@@ -56,10 +55,9 @@ export default function DashboardPage() {
     <div>
       <div style={{ marginBottom:22 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <img src={logo} alt="Tetus Marmoraria" style={{ width: 36, height: 36, objectFit: 'contain' }} />
           <h1 style={{ fontSize:20, fontWeight:700, color:'#111827' }}>Dashboard</h1>
         </div>
-         <p style={{ fontSize:13, color:'#6b7280', marginTop:2 }}>Visão geral em tempo real</p>
+        <p style={{ fontSize:13, color:'#6b7280', marginTop:2 }}>Visão geral em tempo real</p>
       </div>
 
       {/* Stats */}

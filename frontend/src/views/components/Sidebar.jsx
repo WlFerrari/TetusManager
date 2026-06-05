@@ -2,6 +2,7 @@ import React from 'react'
 import { LayoutDashboard, Package, Layers, Scissors, BarChart3, Settings, LogOut, X } from 'lucide-react'
 import { Avatar } from './UI.jsx'
 import { useTheme } from '../../contexts/ThemeContext.jsx'
+import logo from '../../assets/logo.png'
 
 const ALL_NAV = [
   { id:'dashboard',     label:'Dashboard',          icon:LayoutDashboard, perm:'verDashboard'     },
@@ -33,9 +34,7 @@ export default function Sidebar({ page, setPage, user, onLogout, open, onClose }
       <aside className={`sidebar ${open ? 'open' : ''}`}>
         {/* Logo + close button */}
         <div style={{ padding:'16px 14px', borderBottom:'1px solid var(--border-color)', display:'flex', alignItems:'center', gap:10 }}>
-          <div style={{ width:34, height:34, background:'#2563eb', borderRadius:9, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0 }}>
-            <Layers size={18}/>
-          </div>
+          <img src={logo} alt="Tetus Marmoraria" style={{ width:38, height:38, objectFit:'contain', flexShrink:0 }} />
           <div style={{ flex:1 }}>
             <p style={{ color:'#fff', fontWeight:700, fontSize:13, lineHeight:1.2 }}>TetusManager</p>
             <p style={{ color:'var(--text-secondary)', fontSize:10 }}>Sistema de Estoque</p>
