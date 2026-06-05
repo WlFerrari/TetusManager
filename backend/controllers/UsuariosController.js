@@ -153,6 +153,12 @@ class UsuariosController {
   async me(req, res, next) {
     try {
       const data = await UserRepo.findById(req.user.id)
+      if (!data) {
+        return res.status(404).json({
+          ok: false,
+          msg: 'Usuário não encontrado.'
+        })
+      }
       res.json({ ok: true, data })
     } catch (e) { next(e) }
   }
@@ -195,6 +201,12 @@ class UsuariosController {
       }
 
       const row = await UserRepo.findByEmail(req.user.email)
+      if (!row) {
+        return res.status(404).json({
+          ok: false,
+          msg: 'Usuário não encontrado.'
+        })
+      }
       const valid = await bcrypt.compare(senhaAtual, row.senha_hash)
 
       if (!valid) {

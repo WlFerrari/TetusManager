@@ -29,8 +29,14 @@ app.get('/health', (req, res) => {
 
 // ── Tratamento global de erros ────────────────────────────────────────
 app.use((err, req, res, next) => {
-  console.error('Erro não tratado:', err.message)
-  res.status(500).json({ ok: false, msg: 'Erro interno do servidor.' })
+  const status = err.status || 500
+  const msg = status < 500 ? err.message : 'Erro interno do servidor.'
+
+  if (status >= 500) {
+    console.error('Erro não tratado:', err)
+  }
+
+  res.status(status).json({ ok: false, msg })
 })
 
 // ── Inicia o servidor ─────────────────────────────────────────────────
