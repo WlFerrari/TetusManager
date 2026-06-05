@@ -3,10 +3,6 @@
  */
 
 const { query } = require('../database/connection')
-const { NotFoundError } = require('../utils/AppError')
-const { gerarId } = require('../utils/idGenerator')
-const { buildRetalhoQrPayload } = require('../utils/qrPayload')
-const { createQueryBuilder } = require('../utils/queryBuilder')
 
 function toModel(row) {
   if (!row) return null
@@ -32,13 +28,23 @@ function toModel(row) {
   }
 }
 
+function gerarId() {
+  return 'RET-' + Date.now().toString().slice(-6)
+}
+
+function buildRetalhoQrPayload({ id, nome, tipo, status, largura, comprimento, espessura, origem }) {
+  const safe = (v) => (v === undefined || v === null) ? '' : v
+  const origemLabel = origem ? `Chapa ${origem}` : 'Chapa N/A'
+  return `RETALHO|ID:${safe(id)}|Nome:${safe(nome)}|Tipo:${safe(tipo)}|Status:${safe(status)}|Dimensões:${safe(largura)}x${safe(comprimento)}x${safe(espessura)}mm|Origem:${origemLabel}`
+}
+
 const RetalhoRepository = {
 
   /** [C] CREATE */
   async insert(data) {
-    const id   = gerarId('RET-')
+    const id   = gerarId()
     const area = parseFloat(((+data.comprimento * +data.largura) / 10000).toFixed(4))
-    const nome = data.nome?.trim() || `Sobra-${id}`
+    const nome = data.nome?.trim() || `Sobra-${id}` // Fallback se nome vazio/null
     const tipo = data.tipo || 'Granito'
     const cor = data.cor || '#6b7280'
     const espessura = data.espessura || 2
@@ -82,21 +88,29 @@ const RetalhoRepository = {
       return rows.map(toModel)
     }
 
-    const { q, tipo, cor, espessura, status, origem, minLargura, minComprimento, minArea } = filtros || {}
+    const {
+      q, tipo, cor, espessura, status, origem,
+      minLargura, minComprimento, minArea,
+    } = filtros || {}
 
-    const qb = createQueryBuilder()
-    qb.ilikeAny(['nome', 'id', 'status'], q)
-    qb.ilike('tipo', tipo)
-    qb.eq('status', status)
-    qb.eq('origem', origem)
-    qb.ilike('cor', cor)
-    qb.eqNum('espessura', espessura)
-    qb.gte('largura', minLargura)
-    qb.gte('comprimento', minComprimento)
-    qb.gte('area', minArea)
+    const where = []
+    const params = []
+    const add = (sql, val) => {
+      params.push(val)
+      where.push(sql.replace('$', `$${params.length}`))
+    }
 
-    const { whereClause, params } = qb.build()
-    const sql = `SELECT * FROM retalhos ${whereClause} ORDER BY criado_em DESC`
+    if (q) add('(nome ILIKE $ OR id ILIKE $ OR status ILIKE $)', `%${q}%`)
+    if (tipo) add('tipo ILIKE $', `%${tipo}%`)
+    if (status) add('status = $', status)
+    if (origem) add('origem = $', origem)
+    if (cor) add('cor ILIKE $', `%${cor}%`)
+    if (+espessura > 0) add('espessura = $', Number(espessura))
+    if (+minLargura > 0) add('largura >= $', Number(minLargura))
+    if (+minComprimento > 0) add('comprimento >= $', Number(minComprimento))
+    if (+minArea > 0) add('area >= $', Number(minArea))
+
+    const sql = `SELECT * FROM retalhos ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY criado_em DESC`
     const { rows } = await query(sql, params)
     return rows.map(toModel)
   },
@@ -115,7 +129,7 @@ const RetalhoRepository = {
   /** [U] UPDATE */
   async update(id, data) {
     const area = data.area ?? parseFloat(((+data.comprimento * +data.largura) / 10000).toFixed(4))
-    const nome = data.nome?.trim() || `Sobra-${id}`
+    const nome = data.nome?.trim() || `Sobra-${id}` // Fallback se nome vazio/null
     const tipo = data.tipo || 'Granito'
     const cor = data.cor || '#6b7280'
     const espessura = data.espessura || 2
@@ -138,14 +152,14 @@ const RetalhoRepository = {
       RETURNING *
     `, [nome, tipo, cor, data.largura, data.comprimento,
         espessura, area, status, qrCode, data.foto || null, id])
-    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
 
   /** [D] DELETE físico */
   async delete(id) {
     const { rows } = await query('DELETE FROM retalhos WHERE id=$1 RETURNING *', [id])
-    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
 
@@ -156,7 +170,7 @@ const RetalhoRepository = {
       SET status='Consumido', consumido_por=$2, consumido_em=NOW()
       WHERE id=$1 RETURNING *
     `, [id, consumidoPor || null])
-    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
 
@@ -167,7 +181,7 @@ const RetalhoRepository = {
       SET status='Descartado', descartado_por=$2, descartado_em=NOW()
       WHERE id=$1 RETURNING *
     `, [id, descartadoPor || null])
-    if (!rows[0]) throw new NotFoundError(`Retalho "${id}" não encontrado`)
+    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
 

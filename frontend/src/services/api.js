@@ -24,25 +24,13 @@ async function apiFetch(path, options = {}) {
     ...options.headers,
   }
 
-  let res
-  try {
-    res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
-  } catch (networkErr) {
-    return { ok: false, msg: 'Erro de conexão com o servidor.' }
-  }
-
-  let json
-  try {
-    json = await res.json()
-  } catch (parseErr) {
-    return { ok: false, msg: `Resposta inesperada do servidor (HTTP ${res.status}).` }
-  }
+  const res = await fetch(`${BASE_URL}${path}`, { ...options, headers })
+  const json = await res.json()
 
   // Token expirado — desloga
-  if (res.status === 401 && path !== '/auth/login') {
+  if (res.status === 401) {
     tokenStorage.remove()
     window.location.reload()
-    return { ok: false, msg: 'Sessão expirada.' }
   }
 
   return json  // { ok, data, msg }
