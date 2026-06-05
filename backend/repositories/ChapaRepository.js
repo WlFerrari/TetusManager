@@ -4,7 +4,6 @@
  */
 
 const { query } = require('../database/connection')
-const { NotFoundError } = require('../utils/AppError')
 
 // Converte snake_case do banco para camelCase do front
 function toModel(row) {
@@ -145,7 +144,7 @@ const ChapaRepository = {
       WHERE id=$10
       RETURNING *
     `, [data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.foto || null, id])
-    if (!rows[0]) throw new NotFoundError(`Chapa "${id}" não encontrada.`)
+    if (!rows[0]) throw new Error(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
   },
 
@@ -157,7 +156,7 @@ const ChapaRepository = {
   /** [D] DELETE físico */
   async delete(id) {
     const { rows } = await query('DELETE FROM chapas WHERE id=$1 RETURNING *', [id])
-    if (!rows[0]) throw new NotFoundError(`Chapa "${id}" não encontrada.`)
+    if (!rows[0]) throw new Error(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
   },
 

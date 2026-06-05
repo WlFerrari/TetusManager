@@ -1,11 +1,9 @@
 const ChapaRepo = require('../repositories/ChapaRepository')
 const RetalhoRepo = require('../repositories/RetalhoRepository')
 const CorteRepo = require('../repositories/CorteRepository')
-const { pool } = require('../database/connection')
 
 class CortesController {
   async registrar(req, res, next) {
-    const client = await pool.connect()
     try {
       const {
         chapaId,
@@ -36,6 +34,9 @@ class CortesController {
         return res.status(400).json({ ok: false, msg: 'Chapa não está disponível para corte.' })
       }
 
+      const resultado = []
+      const cortes = []
+      const areaConsumida = parseFloat(((+comprimentoConsumido * +larguraConsumida) / 10000).toFixed(4))
       for (const r of retalhos) {
         if (!r.nome?.trim()) {
           return res.status(400).json({ ok: false, msg: 'Nome do retalho é obrigatório.' })
@@ -43,14 +44,7 @@ class CortesController {
         if (!(+r.comprimento > 0 && +r.largura > 0)) {
           return res.status(400).json({ ok: false, msg: 'Dimensões inválidas.' })
         }
-      }
 
-      await client.query('BEGIN')
-
-      const resultado = []
-      const cortes = []
-      const areaConsumida = parseFloat(((+comprimentoConsumido * +larguraConsumida) / 10000).toFixed(4))
-      for (const r of retalhos) {
         const area = parseFloat(((+r.comprimento * +r.largura) / 10000).toFixed(2))
         const retalho = await RetalhoRepo.insert({
           ...r,
@@ -77,8 +71,6 @@ class CortesController {
         cortes.push(corte)
       }
 
-      await client.query('COMMIT')
-
       res.json({
         ok: true,
         data: resultado,
@@ -86,10 +78,7 @@ class CortesController {
         msg: `${resultado.length} retalho(s) registrado(s) com sucesso!`
       })
     } catch (e) {
-      await client.query('ROLLBACK').catch(() => {})
       next(e)
-    } finally {
-      client.release()
     }
   }
 
