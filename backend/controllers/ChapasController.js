@@ -1,130 +1,69 @@
 const ChapaRepo = require('../repositories/ChapaRepository')
+const { asyncHandler, sendSuccess, sendError } = require('../utils/controllerHelpers')
 
 class ChapasController {
-  async list(req, res, next) {
-    try {
-      const data = await ChapaRepo.findAll(req.query || '')
-      res.json({ ok: true, data })
-    } catch (e) { next(e) }
-  }
+  list = asyncHandler(async (req, res) => {
+    const data = await ChapaRepo.findAll(req.query || '')
+    sendSuccess(res, data)
+  })
 
   // Alias do diagrama
-  async listarChapas(req, res, next) {
-    return this.list(req, res, next)
-  }
+  listarChapas = (req, res, next) => this.list(req, res, next)
 
-  async show(req, res, next) {
-    try {
-      const data = await ChapaRepo.findById(req.params.id)
-      if (!data) {
-        return res.status(404).json({
-          ok: false,
-          msg: 'Chapa não encontrada.'
-        })
-      }
-      res.json({ ok: true, data })
-    } catch (e) { next(e) }
-  }
+  show = asyncHandler(async (req, res) => {
+    const data = await ChapaRepo.findById(req.params.id)
+    if (!data) return sendError(res, 'Chapa não encontrada.', 404)
+    sendSuccess(res, data)
+  })
 
   // Alias do diagrama
-  async consultarChapa(req, res, next) {
-    return this.show(req, res, next)
-  }
+  consultarChapa = (req, res, next) => this.show(req, res, next)
 
-  async stats(req, res, next) {
-    try {
-      const data = await ChapaRepo.stats()
-      res.json({ ok: true, data })
-    } catch (e) { next(e) }
-  }
+  stats = asyncHandler(async (req, res) => {
+    const data = await ChapaRepo.stats()
+    sendSuccess(res, data)
+  })
 
-  async create(req, res, next) {
-    try {
-      const { nome, largura, comprimento } = req.body
+  create = asyncHandler(async (req, res) => {
+    const { nome, largura, comprimento } = req.body
 
-      // Validar
-      if (!nome?.trim()) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Nome é obrigatório.'
-        })
-      }
-      if (!(+largura > 0)) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Largura inválida.'
-        })
-      }
-      if (!(+comprimento > 0)) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Comprimento inválido.'
-        })
-      }
+    if (!nome?.trim()) return sendError(res, 'Nome é obrigatório.')
+    if (!(+largura > 0)) return sendError(res, 'Largura inválida.')
+    if (!(+comprimento > 0)) return sendError(res, 'Comprimento inválido.')
 
-      const data = await ChapaRepo.insert({
-        ...req.body,
-        criadoPor: req.user?.id || null,
-      })
-      res.status(201).json({
-        ok: true,
-        data,
-        msg: `Chapa "${data.nome}" cadastrada!`
-      })
-    } catch (e) { next(e) }
-  }
+    const data = await ChapaRepo.insert({
+      ...req.body,
+      criadoPor: req.user?.id || null,
+    })
+    sendSuccess(res, data, `Chapa "${data.nome}" cadastrada!`, 201)
+  })
 
   // Alias do diagrama
-  async gravarChapa(req, res, next) {
-    return this.create(req, res, next)
-  }
+  gravarChapa = (req, res, next) => this.create(req, res, next)
 
-  async update(req, res, next) {
-    try {
-      if (!req.body.nome?.trim()) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Nome é obrigatório.'
-        })
-      }
+  update = asyncHandler(async (req, res) => {
+    if (!req.body.nome?.trim()) return sendError(res, 'Nome é obrigatório.')
 
-      const data = await ChapaRepo.update(req.params.id, req.body)
-      res.json({
-        ok: true,
-        data,
-        msg: `Chapa "${data.nome}" atualizada!`
-      })
-    } catch (e) { next(e) }
-  }
+    const data = await ChapaRepo.update(req.params.id, req.body)
+    sendSuccess(res, data, `Chapa "${data.nome}" atualizada!`)
+  })
 
   // Alias do diagrama
-  async atualizarChapa(req, res, next) {
-    return this.update(req, res, next)
-  }
+  atualizarChapa = (req, res, next) => this.update(req, res, next)
 
-  async delete(req, res, next) {
-    try {
-      const data = await ChapaRepo.delete(req.params.id)
-      res.json({
-        ok: true,
-        data,
-        msg: `Chapa "${data.nome}" excluída!`
-      })
-    } catch (e) { next(e) }
-  }
+  delete = asyncHandler(async (req, res) => {
+    const data = await ChapaRepo.delete(req.params.id)
+    sendSuccess(res, data, `Chapa "${data.nome}" excluída!`)
+  })
 
   // Alias do diagrama
-  async excluirChapa(req, res, next) {
-    return this.delete(req, res, next)
-  }
+  excluirChapa = (req, res, next) => this.delete(req, res, next)
 
   // Lista apenas chapas disponiveis (diagrama)
-  async listarChapasDisponiveis(req, res, next) {
-    try {
-      const data = await ChapaRepo.listarDisponiveis()
-      res.json({ ok: true, data })
-    } catch (e) { next(e) }
-  }
+  listarChapasDisponiveis = asyncHandler(async (req, res) => {
+    const data = await ChapaRepo.listarDisponiveis()
+    sendSuccess(res, data)
+  })
 }
 
 module.exports = new ChapasController()

@@ -5,6 +5,9 @@
 
 const { query } = require('../database/connection')
 const { NotFoundError } = require('../utils/AppError')
+const { gerarId } = require('../utils/idGenerator')
+const { buildChapaQrPayload } = require('../utils/qrPayload')
+const { createQueryBuilder } = require('../utils/queryBuilder')
 
 // Converte snake_case do banco para camelCase do front
 function toModel(row) {
@@ -25,20 +28,11 @@ function toModel(row) {
   }
 }
 
-function gerarId() {
-  return 'CH' + Date.now().toString().slice(-6)
-}
-
-function buildChapaQrPayload({ id, nome, tipo, status, largura, comprimento, espessura }) {
-  const safe = (v) => (v === undefined || v === null) ? '' : v
-  return `CHAPA|ID:${safe(id)}|Nome:${safe(nome)}|Tipo:${safe(tipo)}|Status:${safe(status)}|Dimensões:${safe(largura)}x${safe(comprimento)}x${safe(espessura)}mm`
-}
-
 const ChapaRepository = {
 
   /** [C] CREATE */
   async insert(data) {
-    const id = gerarId()
+    const id = gerarId('CH')
     const status = data.status || 'Disponível'
     const qrCode = data.qrCode || buildChapaQrPayload({
       id,
@@ -72,32 +66,19 @@ const ChapaRepository = {
       return rows.map(toModel)
     }
 
-    const {
-      q, tipo, cor, espessura, status,
-      minLargura, minComprimento,
-    } = filtros || {}
+    const { q, tipo, cor, espessura, status, minLargura, minComprimento } = filtros || {}
 
-    const where = []
-    const params = []
-    const add = (sql, val) => {
-      const placeholderCount = (sql.match(/\$/g) || []).length
-      let clause = sql
-      for (let i = 0; i < placeholderCount; i++) {
-        params.push(val)
-        clause = clause.replace('$', `$${params.length}`)
-      }
-      where.push(clause)
-    }
+    const qb = createQueryBuilder()
+    qb.ilikeAny(['nome', 'tipo', 'id'], q)
+    qb.ilike('tipo', tipo)
+    qb.eq('status', status)
+    qb.ilike('cor', cor)
+    qb.eqNum('espessura', espessura)
+    qb.gte('largura', minLargura)
+    qb.gte('comprimento', minComprimento)
 
-    if (q) add('(nome ILIKE $ OR tipo ILIKE $ OR id ILIKE $)', `%${q}%`)
-    if (tipo) add('tipo ILIKE $', `%${tipo}%`)
-    if (status) add('status = $', status)
-    if (cor) add('cor ILIKE $', `%${cor}%`)
-    if (+espessura > 0) add('espessura = $', Number(espessura))
-    if (+minLargura > 0) add('largura >= $', Number(minLargura))
-    if (+minComprimento > 0) add('comprimento >= $', Number(minComprimento))
-
-    const sql = `SELECT * FROM chapas ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY criado_em DESC`
+    const { whereClause, params } = qb.build()
+    const sql = `SELECT * FROM chapas ${whereClause} ORDER BY criado_em DESC`
     const { rows } = await query(sql, params)
     return rows.map(toModel)
   },
@@ -145,7 +126,7 @@ const ChapaRepository = {
       WHERE id=$10
       RETURNING *
     `, [data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.foto || null, id])
-    if (!rows[0]) throw new NotFoundError(`Chapa "${id}" não encontrada.`)
+    if (!rows[0]) throw new NotFoundError(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
   },
 
@@ -157,7 +138,7 @@ const ChapaRepository = {
   /** [D] DELETE físico */
   async delete(id) {
     const { rows } = await query('DELETE FROM chapas WHERE id=$1 RETURNING *', [id])
-    if (!rows[0]) throw new NotFoundError(`Chapa "${id}" não encontrada.`)
+    if (!rows[0]) throw new NotFoundError(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
   },
 
