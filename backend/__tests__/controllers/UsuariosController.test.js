@@ -5,6 +5,8 @@ const UserRepo = require('../../repositories/UserRepository')
 
 const UsuariosController = require('../../controllers/UsuariosController')
 
+const flushPromises = () => new Promise(setImmediate)
+
 const mockRes = () => {
   const res = { statusCode: 200 }
   res.status = (code) => { res.statusCode = code; return res }
@@ -24,7 +26,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.list(req, res, next)
+      UsuariosController.list(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data).toHaveLength(1)
@@ -37,7 +40,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.list(req, res, next)
+      UsuariosController.list(req, res, next)
+      await flushPromises()
 
       expect(UserRepo.findAll).toHaveBeenCalledWith('admin')
     })
@@ -52,7 +56,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.show(req, res, next)
+      UsuariosController.show(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(404)
       expect(res.body.ok).toBe(false)
@@ -65,7 +70,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.show(req, res, next)
+      UsuariosController.show(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data.nome).toBe('Admin')
@@ -75,45 +81,73 @@ describe('UsuariosController', () => {
   // ── create ────────────────────────────────────────────────────────
   describe('create', () => {
     it('returns 400 when nome is empty', async () => {
-      const req = { body: { nome: '', email: 'a@b.com', perfil: 'Vendedor' } }
+      const req = { body: { nome: '', email: 'a@b.com', perfil: 'Vendedor', senha: '123456' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.create(req, res, next)
+      UsuariosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Nome/)
     })
 
     it('returns 400 when email is invalid', async () => {
-      const req = { body: { nome: 'Test', email: 'invalid', perfil: 'Vendedor' } }
+      const req = { body: { nome: 'Test', email: 'invalid', perfil: 'Vendedor', senha: '123456' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.create(req, res, next)
+      UsuariosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/E-mail/)
     })
 
     it('returns 400 when email has no domain', async () => {
-      const req = { body: { nome: 'Test', email: 'test@', perfil: 'Vendedor' } }
+      const req = { body: { nome: 'Test', email: 'test@', perfil: 'Vendedor', senha: '123456' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.create(req, res, next)
+      UsuariosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
+    })
+
+    it('returns 400 when senha is missing', async () => {
+      const req = { body: { nome: 'Test', email: 'a@b.com', perfil: 'Vendedor' } }
+      const res = mockRes()
+      const next = jest.fn()
+
+      UsuariosController.create(req, res, next)
+      await flushPromises()
+
+      expect(res.statusCode).toBe(400)
+      expect(res.body.msg).toMatch(/Senha/)
+    })
+
+    it('returns 400 when senha is too short', async () => {
+      const req = { body: { nome: 'Test', email: 'a@b.com', perfil: 'Vendedor', senha: '12345' } }
+      const res = mockRes()
+      const next = jest.fn()
+
+      UsuariosController.create(req, res, next)
+      await flushPromises()
+
+      expect(res.statusCode).toBe(400)
+      expect(res.body.msg).toMatch(/Senha/)
     })
 
     it('returns 400 when email already exists', async () => {
       UserRepo.findByEmail.mockResolvedValue({ id: 1 })
 
-      const req = { body: { nome: 'Test', email: 'existing@test.com', perfil: 'Vendedor' } }
+      const req = { body: { nome: 'Test', email: 'existing@test.com', perfil: 'Vendedor', senha: '123456' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.create(req, res, next)
+      UsuariosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/cadastrado/)
@@ -123,11 +157,12 @@ describe('UsuariosController', () => {
       UserRepo.findByEmail.mockResolvedValue(null)
       UserRepo.insert.mockResolvedValue({ id: 2, nome: 'New User' })
 
-      const req = { body: { nome: 'New User', email: 'new@test.com', perfil: 'Unknown' } }
+      const req = { body: { nome: 'New User', email: 'new@test.com', perfil: 'Unknown', senha: '123456' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.create(req, res, next)
+      UsuariosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(201)
       expect(UserRepo.insert).toHaveBeenCalledWith(
@@ -141,11 +176,12 @@ describe('UsuariosController', () => {
       UserRepo.findByEmail.mockResolvedValue(null)
       UserRepo.insert.mockResolvedValue({ id: 3, nome: 'Admin' })
 
-      const req = { body: { nome: 'Admin', email: 'admin@test.com', perfil: 'Administrador' } }
+      const req = { body: { nome: 'Admin', email: 'admin@test.com', perfil: 'Administrador', senha: '123456' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.create(req, res, next)
+      UsuariosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(201)
       expect(UserRepo.insert).toHaveBeenCalledWith(
@@ -165,7 +201,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.updatePermissions(req, res, next)
+      UsuariosController.updatePermissions(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(404)
     })
@@ -177,7 +214,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.updatePermissions(req, res, next)
+      UsuariosController.updatePermissions(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Administrador/)
@@ -191,7 +229,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.updatePermissions(req, res, next)
+      UsuariosController.updatePermissions(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
     })
@@ -206,7 +245,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.resetPermissions(req, res, next)
+      UsuariosController.resetPermissions(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(404)
     })
@@ -218,7 +258,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.resetPermissions(req, res, next)
+      UsuariosController.resetPermissions(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -231,7 +272,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.resetPermissions(req, res, next)
+      UsuariosController.resetPermissions(req, res, next)
+      await flushPromises()
 
       expect(UserRepo.updatePermissoes).toHaveBeenCalledWith(
         2,
@@ -249,7 +291,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.toggle(req, res, next)
+      UsuariosController.toggle(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.msg).toMatch(/inativado/)
@@ -262,7 +305,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.toggle(req, res, next)
+      UsuariosController.toggle(req, res, next)
+      await flushPromises()
 
       expect(res.body.msg).toMatch(/ativado/)
     })
@@ -277,7 +321,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.delete(req, res, next)
+      UsuariosController.delete(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data.nome).toBe('Deleted')
@@ -291,7 +336,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.updateProfile(req, res, next)
+      UsuariosController.updateProfile(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -306,7 +352,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.updateProfile(req, res, next)
+      UsuariosController.updateProfile(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(UserRepo.update).toHaveBeenCalledWith(1, expect.objectContaining({ nome: 'Updated' }))
@@ -316,11 +363,12 @@ describe('UsuariosController', () => {
   // ── changePassword ────────────────────────────────────────────────
   describe('changePassword', () => {
     it('returns 400 when senhaAtual is missing', async () => {
-      const req = { body: { novaSenha: 'newpass' }, user: { id: 1, email: 'a@b.com' } }
+      const req = { body: { novaSenha: 'newpass123' }, user: { id: 1, email: 'a@b.com' } }
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.changePassword(req, res, next)
+      UsuariosController.changePassword(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -330,7 +378,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.changePassword(req, res, next)
+      UsuariosController.changePassword(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -340,7 +389,8 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.changePassword(req, res, next)
+      UsuariosController.changePassword(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/mínimo/)
@@ -357,7 +407,10 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.changePassword(req, res, next)
+      const p = UsuariosController.changePassword(req, res, next)
+      await flushPromises()
+      await p
+      await flushPromises()
 
       expect(res.statusCode).toBe(401)
     })
@@ -374,7 +427,10 @@ describe('UsuariosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await UsuariosController.changePassword(req, res, next)
+      const p = UsuariosController.changePassword(req, res, next)
+      await flushPromises()
+      await p
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(UserRepo.updateSenha).toHaveBeenCalledWith(1, 'newpassword')

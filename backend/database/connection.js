@@ -26,7 +26,10 @@ pool.on('connect', () => {
 })
 
 pool.on('error', (err) => {
-  console.error('Erro no pool PostgreSQL:', err.message)
+  console.error('Erro inesperado no pool PostgreSQL:', err)
+  if (err.message?.includes('terminating connection')) {
+    process.exit(1)
+  }
 })
 
 /**

@@ -1,9 +1,9 @@
 /**
  * REPOSITÓRIO DE CORTES — PostgreSQL
- * Placeholder for the corte (cut) records.
  */
 
 const { query } = require('../database/connection')
+const { createQueryBuilder } = require('../utils/queryBuilder')
 
 function toModel(row) {
   if (!row) return null
@@ -18,31 +18,42 @@ function toModel(row) {
     areaRetalho:          Number(row.area_retalho),
     observacao:           row.observacao || '',
     criadoPor:            row.criado_por || null,
-    criadoEm:             row.criado_em ? new Date(row.criado_em).toLocaleDateString('pt-BR') : null,
+    criadoEm:             new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
 }
 
 const CorteRepository = {
+
   async insert(data) {
     const { rows } = await query(`
       INSERT INTO cortes (os_numero, chapa_id, retalho_id, comprimento_consumido, largura_consumida, area_consumida, area_retalho, observacao, criado_por)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
       RETURNING *
-    `, [data.osNumero, data.chapaId, data.retalhoId, data.comprimentoConsumido,
-        data.larguraConsumida, data.areaConsumida, data.areaRetalho, data.observacao, data.criadoPor])
+    `, [
+      data.osNumero,
+      data.chapaId,
+      data.retalhoId,
+      data.comprimentoConsumido,
+      data.larguraConsumida,
+      data.areaConsumida,
+      data.areaRetalho,
+      data.observacao || null,
+      data.criadoPor || null,
+    ])
     return toModel(rows[0])
   },
 
   async findAll(filtros = {}) {
-    const where = []
-    const params = []
-    if (filtros.chapaId) { params.push(filtros.chapaId); where.push(`chapa_id = $${params.length}`) }
-    if (filtros.retalhoId) { params.push(filtros.retalhoId); where.push(`retalho_id = $${params.length}`) }
-    if (filtros.osNumero) { params.push(filtros.osNumero); where.push(`os_numero = $${params.length}`) }
+    const { chapaId, retalhoId, osNumero, limit } = filtros
 
-    let sql = `SELECT * FROM cortes ${where.length ? `WHERE ${where.join(' AND ')}` : ''} ORDER BY criado_em DESC`
-    if (+filtros.limit > 0) { params.push(+filtros.limit); sql += ` LIMIT $${params.length}` }
+    const qb = createQueryBuilder()
+    qb.eq('chapa_id', chapaId)
+    qb.eq('retalho_id', retalhoId)
+    qb.ilike('os_numero', osNumero)
 
+    const { whereClause, params } = qb.build()
+    const limitClause = (+limit > 0) ? ` LIMIT ${+limit}` : ''
+    const sql = `SELECT * FROM cortes ${whereClause} ORDER BY criado_em DESC${limitClause}`
     const { rows } = await query(sql, params)
     return rows.map(toModel)
   },
@@ -50,15 +61,15 @@ const CorteRepository = {
   async stats() {
     const { rows } = await query(`
       SELECT
-        COUNT(*) AS total,
-        COALESCE(SUM(area_consumida), 0) AS area_total_consumida,
-        COALESCE(SUM(area_retalho), 0) AS area_total_retalho
+        COUNT(*)                            AS total,
+        COALESCE(SUM(area_consumida), 0)    AS area_consumida,
+        COALESCE(SUM(area_retalho), 0)      AS area_retalho
       FROM cortes
     `)
     return {
-      total:               Number(rows[0].total),
-      areaTotalConsumida:  parseFloat(Number(rows[0].area_total_consumida).toFixed(2)),
-      areaTotalRetalho:    parseFloat(Number(rows[0].area_total_retalho).toFixed(2)),
+      total:         Number(rows[0].total),
+      areaConsumida: parseFloat(Number(rows[0].area_consumida).toFixed(2)),
+      areaRetalho:   parseFloat(Number(rows[0].area_retalho).toFixed(2)),
     }
   },
 }

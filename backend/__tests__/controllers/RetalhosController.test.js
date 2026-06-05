@@ -5,6 +5,8 @@ const RetalhoRepo = require('../../repositories/RetalhoRepository')
 
 const RetalhosController = require('../../controllers/RetalhosController')
 
+const flushPromises = () => new Promise(setImmediate)
+
 const mockRes = () => {
   const res = { statusCode: 200 }
   res.status = (code) => { res.statusCode = code; return res }
@@ -24,7 +26,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.list(req, res, next)
+      RetalhosController.list(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data).toHaveLength(1)
@@ -40,7 +43,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.show(req, res, next)
+      RetalhosController.show(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(404)
     })
@@ -52,7 +56,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.show(req, res, next)
+      RetalhosController.show(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
     })
@@ -68,7 +73,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Nome/)
@@ -82,7 +88,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Dimensões/)
@@ -96,7 +103,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -111,7 +119,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(404)
       expect(res.body.msg).toMatch(/Chapa/)
@@ -129,7 +138,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/maior/)
@@ -147,7 +157,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -162,7 +173,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(201)
       expect(res.body.ok).toBe(true)
@@ -181,7 +193,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(201)
     })
@@ -196,7 +209,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.create(req, res, next)
+      RetalhosController.create(req, res, next)
+      await flushPromises()
 
       expect(RetalhoRepo.insert).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -217,7 +231,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.consume(req, res, next)
+      RetalhosController.consume(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(RetalhoRepo.marcarConsumido).toHaveBeenCalledWith('RET-001', 1)
@@ -230,7 +245,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.consume(req, res, next)
+      RetalhosController.consume(req, res, next)
+      await flushPromises()
 
       expect(RetalhoRepo.marcarConsumido).toHaveBeenCalledWith('RET-001', null)
     })
@@ -245,7 +261,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.discard(req, res, next)
+      RetalhosController.discard(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(RetalhoRepo.marcarDescartado).toHaveBeenCalledWith('RET-001', 1)
@@ -261,7 +278,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.delete(req, res, next)
+      RetalhosController.delete(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
     })
@@ -277,7 +295,8 @@ describe('RetalhosController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await RetalhosController.stats(req, res, next)
+      RetalhosController.stats(req, res, next)
+      await flushPromises()
 
       expect(res.body.data).toEqual(stats)
     })

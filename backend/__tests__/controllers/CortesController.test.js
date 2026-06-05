@@ -1,15 +1,21 @@
+const mockClient = {
+  query: jest.fn(),
+  release: jest.fn(),
+}
+jest.mock('../../database/connection', () => ({
+  query: jest.fn(),
+  pool: { connect: jest.fn(() => Promise.resolve(mockClient)) },
+}))
 jest.mock('../../repositories/ChapaRepository')
 jest.mock('../../repositories/RetalhoRepository')
-jest.mock('../../repositories/CorteRepository', () => ({
-  insert: jest.fn(),
-  findAll: jest.fn(),
-  stats: jest.fn(),
-}))
+jest.mock('../../repositories/CorteRepository')
 
 const ChapaRepo = require('../../repositories/ChapaRepository')
 const RetalhoRepo = require('../../repositories/RetalhoRepository')
 const CorteRepo = require('../../repositories/CorteRepository')
 const CortesController = require('../../controllers/CortesController')
+
+const flushPromises = () => new Promise(setImmediate)
 
 const mockRes = () => {
   const res = { statusCode: 200 }
@@ -31,7 +37,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Chapa/)
@@ -45,7 +52,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/OS/)
@@ -59,7 +67,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -72,7 +81,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Dimensões/)
@@ -86,7 +96,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/retalho/)
@@ -100,7 +111,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
     })
@@ -115,7 +127,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(404)
     })
@@ -130,7 +143,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/disponível/)
@@ -149,7 +163,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Nome/)
@@ -168,7 +183,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.statusCode).toBe(400)
       expect(res.body.msg).toMatch(/Dimensões/)
@@ -189,7 +205,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data).toHaveLength(1)
@@ -219,7 +236,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.registrar(req, res, next)
+      CortesController.registrar(req, res, next)
+      await flushPromises()
 
       expect(res.body.data).toHaveLength(2)
       expect(RetalhoRepo.insert).toHaveBeenCalledTimes(2)
@@ -236,7 +254,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.list(req, res, next)
+      CortesController.list(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data).toHaveLength(1)
@@ -249,7 +268,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.list(req, res, next)
+      CortesController.list(req, res, next)
+      await flushPromises()
 
       expect(CorteRepo.findAll).toHaveBeenCalledWith(
         expect.objectContaining({ chapaId: 'CH001', limit: 10 })
@@ -266,7 +286,8 @@ describe('CortesController', () => {
       const res = mockRes()
       const next = jest.fn()
 
-      await CortesController.stats(req, res, next)
+      CortesController.stats(req, res, next)
+      await flushPromises()
 
       expect(res.body.ok).toBe(true)
       expect(res.body.data.total).toBe(5)
