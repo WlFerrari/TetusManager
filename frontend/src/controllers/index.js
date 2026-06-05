@@ -7,8 +7,15 @@
 
 import { chapaRepo, retalhoRepo, userRepo, empresaRepo, corteRepo } from '../repositories/index.js'
 import { mkChapa, mkRetalho } from '../models/index.js'
-import { buildChapaQrPayload, buildRetalhoQrPayload } from '../utils/qrPayload.js'
-import { asyncAction } from '../utils/asyncAction.js'
+
+const buildChapaQrPayload = (data = {}) => {
+  return `CHAPA|ID:${data.id}|Nome:${data.nome}|Tipo:${data.tipo}|Status:${data.status}|Dimensões:${data.largura}x${data.comprimento}x${data.espessura}mm`
+}
+
+const buildRetalhoQrPayload = (data = {}) => {
+  const origemLabel = data.origem ? `Chapa ${data.origem}` : 'Chapa N/A'
+  return `RETALHO|ID:${data.id}|Nome:${data.nome}|Tipo:${data.tipo}|Status:${data.status}|Dimensões:${data.largura}x${data.comprimento}x${data.espessura}mm|Origem:${origemLabel}`
+}
 
 const withChapaQrCode = (payload = {}) => {
   if (!payload.id) return payload
@@ -30,39 +37,49 @@ class ChapaController {
     if (!d.nome?.trim())         return { ok:0, msg:'Nome é obrigatório.' }
     if (!(+d.largura > 0))       return { ok:0, msg:'Largura inválida.' }
     if (!(+d.comprimento > 0))   return { ok:0, msg:'Comprimento inválido.' }
-    return asyncAction(async () => {
+    try {
       const e = await this.r.insert(withChapaQrCode(d))
       return { ok:1, data:e, msg:`Chapa "${e.nome}" cadastrada!` }
-    })
+    } catch(err) {
+      return { ok:0, msg: err.message }
+    }
   }
   
   async listar(f='') {
-    return asyncAction(
-      async () => ({ ok:1, data: await this.r.findAll(f) }),
-      { data: [] }
-    )
+    try {
+      const a = await this.r.findAll(f)
+      return { ok:1, data:a }
+    } catch(err) {
+      return { ok:0, data:[], msg: err.message }
+    }
   }
   
   async buscar(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.findById(id)
       return e ? {ok:1,data:e} : {ok:0,msg:'Não encontrada.'}
-    })
+    } catch(err) {
+      return { ok:0, msg: err.message }
+    }
   }
   
   async atualizar(id,d) {
     if (!d.nome?.trim()) return {ok:0, msg:'Nome é obrigatório.'}
-    return asyncAction(async () => {
+    try {
       const e = await this.r.update(id, withChapaQrCode({ ...d, id }))
       return {ok:1,data:e,msg:`Chapa "${e.nome}" atualizada!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
   
   async excluir(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.delete(id)
       return {ok:1,msg:`Chapa "${e.nome}" excluída!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   // Aliases do diagrama
@@ -72,13 +89,16 @@ class ChapaController {
   async excluirChapa(id) { return this.excluir(id) }
   async consultarChapa(id) { return this.buscar(id) }
   async listarChapasDisponiveis() {
-    return asyncAction(
-      async () => ({ ok: 1, data: await this.r.listarDisponiveis() }),
-      { data: [] }
-    )
+    try {
+      const a = await this.r.listarDisponiveis()
+      return { ok: 1, data: a }
+    } catch (err) {
+      return { ok: 0, data: [], msg: err.message }
+    }
   }
 
   calcularCorte(cid, cc, lc, nome = '', chapa = null) {
+    // Cálculo básico: area = comprimento × largura
     if (!cid || !cc || !lc) return { ok: 0, msg: 'Todos os campos são obrigatórios.' }
     if (cc <= 0 || lc <= 0) return { ok: 0, msg: 'Comprimento e largura devem ser maiores que 0.' }
 
@@ -103,10 +123,11 @@ class ChapaController {
   }
 
   async stats() {
-    return asyncAction(
-      async () => await this.r.stats(),
-      { total: 0, disponiveis: 0, emUso: 0 }
-    )
+    try {
+      return await this.r.stats()
+    } catch(err) {
+      return { total: 0, disponiveis: 0, emUso: 0 }
+    }
   }
 }
 
@@ -114,74 +135,89 @@ class ChapaController {
 class RetalhoController {
   constructor(r) { this.r = r }
 
-  async criar(d) {
-    if (!d.nome?.trim()) return {ok:0,msg:'Nome é obrigatório.'}
-    if (!(+d.comprimento>0 && +d.largura>0)) return {ok:0,msg:'Dimensões inválidas.'}
-    return asyncAction(async () => {
-      const area = parseFloat(((+d.comprimento*+d.largura)/10000).toFixed(2))
-      const payload = {
-        ...d,
-        area,
-        tipo: d.tipo || 'Granito',
-        cor: d.cor || '#6b7280',
-        espessura: +d.espessura || 2
-      }
-      const e = await this.r.insert(withRetalhoQrCode(payload))
-      return {ok:1,data:e,msg:`Retalho "${e.id}" cadastrado!`}
-    })
-  }
+   async criar(d) {
+     if (!d.nome?.trim()) return {ok:0,msg:'Nome é obrigatório.'}
+     if (!(+d.comprimento>0 && +d.largura>0)) return {ok:0,msg:'Dimensões inválidas.'}
+     try {
+       const area = parseFloat(((+d.comprimento*+d.largura)/10000).toFixed(2))
+       const payload = {
+         ...d,
+         area,
+         tipo: d.tipo || 'Granito',
+         cor: d.cor || '#6b7280',
+         espessura: +d.espessura || 2
+       }
+       const e = await this.r.insert(withRetalhoQrCode(payload))
+       return {ok:1,data:e,msg:`Retalho "${e.id}" cadastrado!`}
+     } catch(err) {
+       return {ok:0,msg:err.message}
+     }
+   }
 
   // Alias do diagrama
   async gravarRetalho(d) { return this.criar(d) }
 
   async listar(f='') {
-    return asyncAction(
-      async () => ({ok:1, data: await this.r.findAll(f)}),
-      { data: [] }
-    )
+    try {
+      const a = await this.r.findAll(f)
+      return {ok:1,data:a}
+    } catch(err) {
+      return {ok:0,data:[],msg:err.message}
+    }
   }
   
   async buscar(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.findById(id)
       return e?{ok:1,data:e}:{ok:0,msg:'Não encontrado.'}
-    })
+    } catch(err) {
+      return {ok:0,msg:err.message}
+    }
   }
   
   async atualizar(id,d) {
-    return asyncAction(async () => {
+    try {
       const area=parseFloat(((+d.comprimento*+d.largura)/10000).toFixed(2))
       const e = await this.r.update(id, withRetalhoQrCode({ ...d, id, area }))
       return {ok:1,data:e,msg:`Retalho "${e.id}" atualizado!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
   
   async excluir(id) {
-    return asyncAction(async () => {
+    try {
       await this.r.delete(id)
       return {ok:1,msg:`Retalho "${id}" excluído!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   async marcarConsumido(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.marcarConsumido(id)
       return {ok:1,data:e,msg:'Marcado como consumido!'}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   async marcarDescartado(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.marcarDescartado(id)
       return {ok:1,data:e,msg:'Retalho descartado!'}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   async stats() {
-    return asyncAction(
-      async () => await this.r.stats(),
-      { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, descartados: 0, areaTotal: 0 }
-    )
+    try {
+      return await this.r.stats()
+    } catch(err) {
+      return { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, descartados: 0, areaTotal: 0 }
+    }
   }
 }
 
@@ -193,69 +229,87 @@ class UserController {
   async criar(d) {
     if (!d.nome?.trim())         return {ok:0,msg:'Nome é obrigatório.'}
     if (!this._ve(d.email))      return {ok:0,msg:'E-mail inválido.'}
-    return asyncAction(async () => {
+    try {
       const e = await this.r.insert(d)
       return {ok:1,data:e,msg:`Usuário "${e.nome}" criado!`}
-    })
+    } catch(err) {
+      return {ok:0,msg:err.message}
+    }
   }
   
   async listar(f='') {
-    return asyncAction(
-      async () => ({ok:1, data: await this.r.findAll(f)}),
-      { data: [] }
-    )
+    try {
+      const a = await this.r.findAll(f)
+      return {ok:1,data:a}
+    } catch(err) {
+      return {ok:0,data:[],msg:err.message}
+    }
   }
   
   async buscar(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.findById(id)
       return e?{ok:1,data:e}:{ok:0,msg:'Não encontrado.'}
-    })
+    } catch(err) {
+      return {ok:0,msg:err.message}
+    }
   }
   
   async atualizar(id,d) {
     if (!d.nome?.trim())    return {ok:0,msg:'Nome é obrigatório.'}
     if (!this._ve(d.email)) return {ok:0,msg:'E-mail inválido.'}
-    return asyncAction(async () => {
+    try {
       const e = await this.r.update(id,d)
       return {ok:1,data:e,msg:`Usuário "${e.nome}" atualizado!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
   
   async toggleStatus(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.toggleStatus(id)
       return {ok:1,data:e,msg:`Usuário ${e.status==='Ativo'?'ativado':'inativado'}!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
   
   async excluir(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.delete(id)
       return {ok:1,msg:`Usuário "${e.nome}" excluído!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   async atualizarPermissoes(id, permissoes) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.atualizarPermissoes(id, permissoes)
       return {ok:1,data:e,msg:`Permissões atualzadas!`}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   async resetarPermissoes(id) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.resetarPermissoes(id)
       return {ok:1,data:e,msg:'Permissões resetadas ao padrão do perfil!'}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 
   async atualizarPerfil(id, d) {
     if (!d.nome?.trim()) return {ok:0,msg:'Nome é obrigatório.'}
-    return asyncAction(async () => {
+    try {
       const e = await this.r.update(id, { nome:d.nome, telefone:d.telefone||'', cargo:d.cargo||'', foto:d.foto||null })
       return {ok:1,data:e,msg:'Perfil atualizado com sucesso!'}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 }
 
@@ -264,17 +318,21 @@ class EmpresaController {
   constructor(r) { this.r = r }
 
   async buscar() {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.get()
       return {ok:1,data:e}
-    })
+    } catch(err) {
+      return {ok:0,msg:err.message}
+    }
   }
 
   async atualizar(d) {
-    return asyncAction(async () => {
+    try {
       const e = await this.r.update(d)
       return {ok:1,data:e,msg:'Empresa atualizada com sucesso!'}
-    })
+    } catch(e) {
+      return {ok:0,msg:e.message}
+    }
   }
 }
 
@@ -288,24 +346,29 @@ class CorteController {
     if (!(+payload.comprimentoConsumido > 0 && +payload.larguraConsumida > 0)) {
       return { ok: 0, msg: 'Dimensões consumidas inválidas.' }
     }
-    return asyncAction(async () => {
+    try {
       const res = await this.r.registrar(payload)
       return { ok: 1, data: res.data, cortes: res.cortes, msg: 'Corte registrado com sucesso!' }
-    })
+    } catch (e) {
+      return { ok: 0, msg: e.message }
+    }
   }
 
   async listar(filters = {}) {
-    return asyncAction(
-      async () => ({ ok: 1, data: await this.r.listar(filters) }),
-      { data: [] }
-    )
+    try {
+      const data = await this.r.listar(filters)
+      return { ok: 1, data }
+    } catch (e) {
+      return { ok: 0, data: [], msg: e.message }
+    }
   }
 
   async stats() {
-    return asyncAction(
-      async () => await this.r.stats(),
-      { total: 0, areaConsumida: 0, areaRetalho: 0 }
-    )
+    try {
+      return await this.r.stats()
+    } catch (e) {
+      return { total: 0, areaConsumida: 0, areaRetalho: 0 }
+    }
   }
 }
 

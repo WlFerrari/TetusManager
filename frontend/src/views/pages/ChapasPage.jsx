@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { useState, useEffect } from 'react'
 import { Plus, Edit2, Trash2, Eye, QrCode, Camera } from 'lucide-react'
 import { chapaCtrl, corteCtrl } from '../../controllers/index.js'
 import { TIPOS_ROCHA, STATUS_CHAPA } from '../../models/index.js'
@@ -7,36 +7,67 @@ import {
   BtnPrimary, BtnSecondary, BtnIcon, SectionHeader, SearchInput,
 } from '../components/UI.jsx'
 import QRCodeModal from '../components/QRCodeModal.jsx'
-import { useInventoryPage } from '../../hooks/useInventoryPage.js'
 
 const BLANK = { nome:'', tipo:'Granito', cor:'#6b7280', largura:'', comprimento:'', espessura:2, status:'Disponível', foto:null }
-const INITIAL_FILTERS = { q: '', tipo: '', status: '', espessura: '', cor: '', minLargura: '', minComprimento: '' }
 
 export default function ChapasPage({ onUpdate }) {
-  const {
-    filters, setFilters, showFilters, toggleFilters,
-    modal, setModal,
-    form, setForm, F,
-    target, setTarget,
-    erros, setErros,
-    lista, loading,
-    qrCodeItem, setQrCodeItem,
-    history, historyLoading,
-    FF, closeModal,
-    handleFoto, openView, carregar,
-    activeFilters,
-  } = useInventoryPage({
-    initialFilters: INITIAL_FILTERS,
-    blankForm: BLANK,
-    loadFn: (f) => chapaCtrl.listarChapas(f),
-    historyFn: (id) => corteCtrl.listar({ chapaId: id, limit: 6 }),
+  const [filters, setFilters] = useState({
+    q: '', tipo: '', status: '', espessura: '', cor: '', minLargura: '', minComprimento: '',
   })
+  const [showFilters, setShowFilters] = useState(false)
+  const [modal,  setModal]  = useState(null)
+  const [form,   setForm]   = useState(BLANK)
+  const [target, setTarget] = useState(null)
+  const [erros,  setErros]  = useState({})
+  const [lista,  setLista]  = useState([])
+  const [loading, setLoading] = useState(false)
+  const [qrCodeItem, setQrCodeItem] = useState(null)
+  const [history, setHistory] = useState([])
+  const [historyLoading, setHistoryLoading] = useState(false)
+
+  // Carrega chapas ao montar
+  useEffect(() => {
+    carregarChapas()
+  }, [filters])
+
+  async function carregarChapas() {
+    setLoading(true)
+    const r = await chapaCtrl.listarChapas(filters)
+    setLista(r.ok ? r.data : [])
+    setLoading(false)
+  }
+
+  const F = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const FF = (k, v) => setFilters(f => ({ ...f, [k]: v }))
+  const closeModal = () => { setModal(null); setErros({}); setTarget(null) }
+
+  function handleFoto(e) {
+    const file = e.target.files[0]
+    if (!file) return
+    const reader = new FileReader()
+    reader.onload = ev => F('foto', ev.target.result)
+    reader.readAsDataURL(file)
+  }
+
+  async function carregarHistorico(chapaId) {
+    setHistoryLoading(true)
+    const r = await corteCtrl.listar({ chapaId, limit: 6 })
+    setHistory(r.ok ? r.data : [])
+    setHistoryLoading(false)
+  }
+
+  function openView(c) {
+    setTarget(c)
+    setModal('view')
+    setHistory([])
+    carregarHistorico(c.id)
+  }
 
   async function handleAdd() {
     const r = await chapaCtrl.gravarChapa(form)
     if (!r.ok) { setErros({ geral: r.msg }); return }
     onUpdate(r.msg, 'ok')
-    carregar()
+    carregarChapas()
     closeModal()
   }
 
@@ -44,7 +75,7 @@ export default function ChapasPage({ onUpdate }) {
     const r = await chapaCtrl.atualizarChapa(form.id, form)
     if (!r.ok) { setErros({ geral: r.msg }); return }
     onUpdate(r.msg, 'ok')
-    carregar()
+    carregarChapas()
     closeModal()
   }
 
@@ -52,9 +83,14 @@ export default function ChapasPage({ onUpdate }) {
     if (!target?.id) { onUpdate('Chapa não selecionada.', 'err'); closeModal(); return }
     const r = await chapaCtrl.excluirChapa(target.id)
     onUpdate(r.msg, r.ok ? 'ok' : 'err')
-    carregar()
+    carregarChapas()
     closeModal()
   }
+
+  const activeFilters = Object.values(filters).filter(v => {
+    if (v === null || v === undefined) return false
+    return String(v).trim() !== ''
+  }).length
 
   return (
     <div>
@@ -63,7 +99,7 @@ export default function ChapasPage({ onUpdate }) {
         subtitle={`${lista.length} registro(s)`}
         action={
           <div style={{ display: 'flex', gap: 8 }}>
-            <BtnSecondary onClick={toggleFilters}>
+            <BtnSecondary onClick={() => setShowFilters(s => !s)}>
               {showFilters ? 'Ocultar filtros' : `Filtros (${activeFilters})`}
             </BtnSecondary>
             <BtnPrimary onClick={() => { setForm(BLANK); setModal('add') }}>
@@ -104,7 +140,7 @@ export default function ChapasPage({ onUpdate }) {
             </FormField>
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 8 }}>
-            <BtnSecondary onClick={() => setFilters(INITIAL_FILTERS)}>
+            <BtnSecondary onClick={() => setFilters({ q: '', tipo: '', status: '', espessura: '', cor: '', minLargura: '', minComprimento: '' })}>
               Limpar filtros
             </BtnSecondary>
           </div>

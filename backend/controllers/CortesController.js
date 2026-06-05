@@ -2,47 +2,54 @@ const ChapaRepo = require('../repositories/ChapaRepository')
 const RetalhoRepo = require('../repositories/RetalhoRepository')
 const CorteRepo = require('../repositories/CorteRepository')
 const { pool } = require('../database/connection')
-const { asyncHandler, sendSuccess, sendError } = require('../utils/controllerHelpers')
 
 class CortesController {
-  registrar = asyncHandler(async (req, res) => {
-    const {
-      chapaId,
-      osNumero,
-      comprimentoConsumido,
-      larguraConsumida,
-      observacao,
-      retalhos,
-    } = req.body
-
-    if (!chapaId) return sendError(res, 'Chapa é obrigatória.')
-    if (!osNumero?.trim()) return sendError(res, 'Número da OS é obrigatório.')
-    if (!(+comprimentoConsumido > 0 && +larguraConsumida > 0)) {
-      return sendError(res, 'Dimensões consumidas inválidas.')
-    }
-    if (!Array.isArray(retalhos) || retalhos.length === 0) {
-      return sendError(res, 'Mínimo 1 retalho.')
-    }
-
-    const chapa = await ChapaRepo.findById(chapaId)
-    if (!chapa) return sendError(res, 'Chapa não encontrada.', 404)
-    if (chapa.status !== 'Disponível') {
-      return sendError(res, 'Chapa não está disponível para corte.')
-    }
-
-    for (const r of retalhos) {
-      if (!r.nome?.trim()) return sendError(res, 'Nome do retalho é obrigatório.')
-      if (!(+r.comprimento > 0 && +r.largura > 0)) return sendError(res, 'Dimensões inválidas.')
-    }
-
+  async registrar(req, res, next) {
     const client = await pool.connect()
     try {
+      const {
+        chapaId,
+        osNumero,
+        comprimentoConsumido,
+        larguraConsumida,
+        observacao,
+        retalhos,
+      } = req.body
+      if (!chapaId) {
+        return res.status(400).json({ ok: false, msg: 'Chapa é obrigatória.' })
+      }
+      if (!osNumero?.trim()) {
+        return res.status(400).json({ ok: false, msg: 'Número da OS é obrigatório.' })
+      }
+      if (!(+comprimentoConsumido > 0 && +larguraConsumida > 0)) {
+        return res.status(400).json({ ok: false, msg: 'Dimensões consumidas inválidas.' })
+      }
+      if (!Array.isArray(retalhos) || retalhos.length === 0) {
+        return res.status(400).json({ ok: false, msg: 'Mínimo 1 retalho.' })
+      }
+
+      const chapa = await ChapaRepo.findById(chapaId)
+      if (!chapa) {
+        return res.status(404).json({ ok: false, msg: 'Chapa não encontrada.' })
+      }
+      if (chapa.status !== 'Disponível') {
+        return res.status(400).json({ ok: false, msg: 'Chapa não está disponível para corte.' })
+      }
+
+      for (const r of retalhos) {
+        if (!r.nome?.trim()) {
+          return res.status(400).json({ ok: false, msg: 'Nome do retalho é obrigatório.' })
+        }
+        if (!(+r.comprimento > 0 && +r.largura > 0)) {
+          return res.status(400).json({ ok: false, msg: 'Dimensões inválidas.' })
+        }
+      }
+
       await client.query('BEGIN')
 
       const resultado = []
       const cortes = []
       const areaConsumida = parseFloat(((+comprimentoConsumido * +larguraConsumida) / 10000).toFixed(4))
-
       for (const r of retalhos) {
         const area = parseFloat(((+r.comprimento * +r.largura) / 10000).toFixed(2))
         const retalho = await RetalhoRepo.insert({
@@ -80,26 +87,35 @@ class CortesController {
       })
     } catch (e) {
       await client.query('ROLLBACK').catch(() => {})
-      throw e
+      next(e)
     } finally {
       client.release()
     }
-  })
+  }
 
-  list = asyncHandler(async (req, res) => {
-    const data = await CorteRepo.findAll({
-      chapaId: req.query.chapaId,
-      retalhoId: req.query.retalhoId,
-      osNumero: req.query.osNumero,
-      limit: req.query.limit,
-    })
-    sendSuccess(res, data)
-  })
+  async list(req, res, next) {
+    try {
+      const data = await CorteRepo.findAll({
+        chapaId: req.query.chapaId,
+        retalhoId: req.query.retalhoId,
+        osNumero: req.query.osNumero,
+        limit: req.query.limit,
+      })
+      res.json({ ok: true, data })
+    } catch (e) {
+      next(e)
+    }
+  }
 
-  stats = asyncHandler(async (req, res) => {
-    const data = await CorteRepo.stats()
-    sendSuccess(res, data)
-  })
+  async stats(req, res, next) {
+    try {
+      const data = await CorteRepo.stats()
+      res.json({ ok: true, data })
+    } catch (e) {
+      next(e)
+    }
+  }
 }
 
 module.exports = new CortesController()
+
