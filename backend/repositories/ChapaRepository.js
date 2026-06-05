@@ -79,13 +79,8 @@ const ChapaRepository = {
     const where = []
     const params = []
     const add = (sql, val) => {
-      const placeholderCount = (sql.match(/\$/g) || []).length
-      let clause = sql
-      for (let i = 0; i < placeholderCount; i++) {
-        params.push(val)
-        clause = clause.replace('$', `$${params.length}`)
-      }
-      where.push(clause)
+      params.push(val)
+      where.push(sql.replace('$', `$${params.length}`))
     }
 
     if (q) add('(nome ILIKE $ OR tipo ILIKE $ OR id ILIKE $)', `%${q}%`)

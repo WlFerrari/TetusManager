@@ -25,7 +25,7 @@ class UsuariosController {
 
   async create(req, res, next) {
     try {
-      const { nome, email, perfil, senha } = req.body
+      const { nome, email, perfil } = req.body
 
       // Validar
       if (!nome?.trim()) {
@@ -39,13 +39,6 @@ class UsuariosController {
         return res.status(400).json({
           ok: false,
           msg: 'E-mail inválido.'
-        })
-      }
-
-      if (!senha || senha.length < 6) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Senha é obrigatória (mínimo 6 caracteres).'
         })
       }
 

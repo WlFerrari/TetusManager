@@ -26,10 +26,7 @@ const UserRepository = {
 
   /** [C] CREATE */
   async insert(data) {
-    if (!data.senha || data.senha.length < 6) {
-      throw new Error('Senha é obrigatória (mínimo 6 caracteres).')
-    }
-    const hash = await bcrypt.hash(data.senha, 10)
+    const hash = await bcrypt.hash(data.senha || '123456', 10)
     const { rows } = await query(`
       INSERT INTO usuarios (nome, email, senha_hash, perfil, status, telefone, cargo, foto, permissoes)
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9)
