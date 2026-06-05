@@ -40,8 +40,21 @@ class AuthController {
         })
       }
 
-      // Gerar JWT
-      const payload = {
+      // Gerar JWT (payload mínimo — dados sensíveis ficam apenas na resposta)
+      const tokenPayload = {
+        id: row.id,
+        email: row.email,
+        perfil: row.perfil,
+        permissoes: row.permissoes,
+      }
+
+      const token = jwt.sign(
+        tokenPayload,
+        process.env.JWT_SECRET,
+        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
+      )
+
+      const userResponse = {
         id: row.id,
         nome: row.nome,
         email: row.email,
@@ -52,15 +65,9 @@ class AuthController {
         cargo: row.cargo,
       }
 
-      const token = jwt.sign(
-        payload,
-        process.env.JWT_SECRET,
-        { expiresIn: process.env.JWT_EXPIRES_IN || '8h' }
-      )
-
       res.json({
         ok: true,
-        data: { token, user: payload },
+        data: { token, user: userResponse },
         msg: 'Login realizado com sucesso!'
       })
 
