@@ -132,13 +132,16 @@ const ChapaRepository = {
       comprimento: data.comprimento,
       espessura: data.espessura,
     })
+    const hasFoto = Object.prototype.hasOwnProperty.call(data, 'foto')
+    const foto = hasFoto ? data.foto : null
     const { rows } = await query(`
       UPDATE chapas
       SET nome=$1, tipo=$2, cor=$3, largura=$4, comprimento=$5, espessura=$6, status=$7,
-          qr_code=COALESCE($8, qr_code), foto=COALESCE($9, foto)
-      WHERE id=$10
+          qr_code=COALESCE($8, qr_code),
+          foto=CASE WHEN $9 THEN $10 ELSE foto END
+      WHERE id=$11
       RETURNING *
-    `, [data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, data.foto || null, id])
+    `, [data.nome, data.tipo, data.cor, data.largura, data.comprimento, data.espessura, status, qrCode, hasFoto, foto, id])
     if (!rows[0]) throw new Error(`Chapa "${id}" não encontrada`)
     return toModel(rows[0])
   },

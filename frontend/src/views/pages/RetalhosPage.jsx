@@ -49,6 +49,12 @@ export default function RetalhosPage({ onUpdate }) {
     reader.readAsDataURL(file)
   }
 
+  function handleRemoverFoto() {
+    const input = document.getElementById('retalho-foto-input')
+    if (input) input.value = ''
+    F('foto', null)
+  }
+
   async function carregarHistorico(retalhoId) {
     setHistoryLoading(true)
     const r = await corteCtrl.listar({ retalhoId, limit: 6 })
@@ -303,7 +309,7 @@ export default function RetalhosPage({ onUpdate }) {
               </button>
               {form.foto && <img src={form.foto} alt="Prévia" style={{ width: 52, height: 52, borderRadius: 8, objectFit: 'cover' }} />}
               {form.foto && (
-                <button type="button" onClick={() => F('foto', null)} style={{ fontSize: 12, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>
+                <button type="button" onClick={handleRemoverFoto} style={{ fontSize: 12, color: '#dc2626', background: 'none', border: 'none', cursor: 'pointer' }}>
                   Remover
                 </button>
               )}

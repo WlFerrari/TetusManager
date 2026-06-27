@@ -144,14 +144,17 @@ const RetalhoRepository = {
       espessura,
       origem: data.origem || null,
     })
+    const hasFoto = Object.prototype.hasOwnProperty.call(data, 'foto')
+    const foto = hasFoto ? data.foto : null
     const { rows } = await query(`
       UPDATE retalhos
       SET nome=$1, tipo=$2, cor=$3, largura=$4, comprimento=$5,
-          espessura=$6, area=$7, status=$8, qr_code=COALESCE($9, qr_code), foto=COALESCE($10, foto)
-      WHERE id=$11
+          espessura=$6, area=$7, status=$8, qr_code=COALESCE($9, qr_code),
+          foto=CASE WHEN $10 THEN $11 ELSE foto END
+      WHERE id=$12
       RETURNING *
     `, [nome, tipo, cor, data.largura, data.comprimento,
-        espessura, area, status, qrCode, data.foto || null, id])
+        espessura, area, status, qrCode, hasFoto, foto, id])
     if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
     return toModel(rows[0])
   },
