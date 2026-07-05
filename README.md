@@ -19,6 +19,38 @@ npm install
 npm run dev
 ```
 
+## Deploy recomendado para banca
+
+A forma mais simples de publicar esse projeto e ainda conseguir ver o banco de dados é esta:
+
+1. Banco de dados no Supabase.
+2. Backend no Render.
+3. Frontend no Vercel.
+
+O Supabase é o melhor ponto para a parte do banco porque já tem editor visual de tabelas, SQL editor e navegação de dados pela web.
+
+### Passo a passo resumido
+
+1. Crie um projeto no Supabase e copie as credenciais de conexão.
+2. No Supabase, rode o conteúdo de [backend/database/migrations.sql](backend/database/migrations.sql) no SQL Editor.
+3. Aponte o backend para esse banco com `DATABASE_URL` ou com `DB_HOST`, `DB_PORT`, `DB_NAME`, `DB_USER`, `DB_PASSWORD` e `DB_SSL=true`.
+4. Publique o backend no Render com o comando de start `npm start`.
+5. Publique o frontend no Vercel com `VITE_API_URL` apontando para a URL pública do backend.
+6. Rode o seed uma vez para popular o banco com dados de exemplo, usando o mesmo banco do Supabase.
+
+### Variáveis de ambiente
+
+Backend:
+
+- `DATABASE_URL` opcional, se o provedor entregar uma URL única.
+- `DB_SSL=true` para bancos gerenciados como Supabase.
+- `FRONTEND_URL` com a URL pública do frontend.
+- `JWT_SECRET` com uma chave longa e segura.
+
+Frontend:
+
+- `VITE_API_URL=https://sua-api.onrender.com/api`
+
 ---
 
 ## Pré-requisitos

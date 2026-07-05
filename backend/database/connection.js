@@ -7,18 +7,29 @@
 require('dotenv').config()
 const { Pool } = require('pg')
 
-const pool = new Pool({
-  host:     process.env.DB_HOST     || 'localhost',
-  port:     Number(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME     || 'tetusmanager',
-  user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD || '',
-  // Número máximo de conexões simultâneas no pool
-  max:      10,
-  // Tempo máximo para aguardar uma conexão livre (ms)
-  idleTimeoutMillis:    30000,
-  connectionTimeoutMillis: 2000,
-})
+const useSsl = process.env.DB_SSL === 'true'
+
+const poolConfig = process.env.DATABASE_URL
+  ? {
+      connectionString: process.env.DATABASE_URL,
+      ssl: useSsl ? { rejectUnauthorized: false } : undefined,
+      max: 10,
+      idleTimeoutMillis: 30000,
+      connectionTimeoutMillis: 2000,
+    }
+  : {
+      host:     process.env.DB_HOST     || 'localhost',
+      port:     Number(process.env.DB_PORT) || 5432,
+      database: process.env.DB_NAME     || 'tetusmanager',
+      user:     process.env.DB_USER     || 'postgres',
+      password: process.env.DB_PASSWORD || '',
+      ssl:      useSsl ? { rejectUnauthorized: false } : undefined,
+      max:      10,
+      idleTimeoutMillis:    30000,
+      connectionTimeoutMillis: 2000,
+    }
+
+const pool = new Pool(poolConfig)
 
 // Testa a conexão ao iniciar
 pool.on('connect', () => {
