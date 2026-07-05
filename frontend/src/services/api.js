@@ -5,7 +5,11 @@
  * Armazena o token JWT no localStorage e o envia em toda requisição.
  */
 
-const BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+const rawBaseUrl = import.meta.env.VITE_API_URL || 'http://localhost:3001/api'
+
+const BASE_URL = rawBaseUrl.endsWith('/api')
+  ? rawBaseUrl
+  : `${rawBaseUrl.replace(/\/$/, '')}/api`
 
 // ── Gerenciamento do token JWT ────────────────────────────────────────
 export const tokenStorage = {

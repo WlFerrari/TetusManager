@@ -11,9 +11,21 @@ const routes  = require('./routes/index')
 const app  = express()
 const PORT = process.env.PORT || 3001
 
+function normalizeOrigin(value) {
+  if (!value) return 'http://localhost:3000'
+
+  try {
+    return new URL(value).origin
+  } catch (err) {
+    return new URL(`https://${value}`).origin
+  }
+}
+
+const frontendOrigin = normalizeOrigin(process.env.FRONTEND_URL)
+
 // ── Middlewares globais ───────────────────────────────────────────────
 app.use(cors({
-  origin:      process.env.FRONTEND_URL || 'http://localhost:3000',
+  origin:      frontendOrigin,
   credentials: true,
 }))
 app.use(express.json({ limit: '10mb' }))   // 10mb para suportar fotos base64
@@ -36,5 +48,6 @@ app.use((err, req, res, next) => {
 // ── Inicia o servidor ─────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`\nTetusManager API rodando em http://localhost:${PORT}`)
+  console.log(`   CORS liberado para: ${frontendOrigin}`)
   console.log(`   Health check: http://localhost:${PORT}/health\n`)
 })
