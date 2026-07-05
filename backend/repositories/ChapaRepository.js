@@ -80,7 +80,7 @@ const ChapaRepository = {
     const params = []
     const add = (sql, val) => {
       params.push(val)
-      where.push(sql.replace('$', `$${params.length}`))
+      where.push(sql.replace(/\$/g, `$${params.length}`))
     }
 
     if (q) add('(nome ILIKE $ OR tipo ILIKE $ OR id ILIKE $)', `%${q}%`)
