@@ -27,10 +27,10 @@ function RelatoriosPage() {
 }
 
 const BOTTOM_NAV = [
-  { id:'dashboard', label:'Início', Icon:LayoutDashboard },
-  { id:'chapas', label:'Estoque', Icon:Package },
-  { id:'corte', label:'Corte', Icon:Scissors },
-  { id:'configuracoes', label:'Config', Icon:Settings },
+  { id:'dashboard', label:'Início', Icon:LayoutDashboard, perm:'verDashboard' },
+  { id:'chapas', label:'Estoque', Icon:Package, perm:'verEstoque' },
+  { id:'corte', label:'Corte', Icon:Scissors, perm:'registrarCorte' },
+  { id:'configuracoes', label:'Config', Icon:Settings, perm:'verConfiguracoes' },
 ]
 
 function AppContent() {
@@ -51,14 +51,18 @@ function AppContent() {
 
   if (!user) return <LoginPage onLogin={u => { setUser(u); setPage('dashboard') }} />
 
+  const perms = user.permissoes || {}
   const pages = {
-    dashboard: <DashboardPage />,
-    chapas: <ChapasPage onUpdate={showToast} user={user} />,
-    retalhos: <RetalhosPage onUpdate={showToast} user={user} />,
-    corte: <CortePage onUpdate={showToast} />,
-    relatorios: <RelatoriosPage />,
-    configuracoes: <ConfiguracoesPage user={user} onUserUpdate={handleUserUpdate} onToast={showToast} />,
+    dashboard: perms.verDashboard !== false ? <DashboardPage /> : null,
+    chapas: perms.verEstoque !== false ? <ChapasPage onUpdate={showToast} user={user} /> : null,
+    retalhos: perms.verEstoque !== false ? <RetalhosPage onUpdate={showToast} user={user} /> : null,
+    corte: perms.registrarCorte !== false ? <CortePage onUpdate={showToast} /> : null,
+    relatorios: perms.verRelatorios !== false ? <RelatoriosPage /> : null,
+    configuracoes: perms.verConfiguracoes !== false
+      ? <ConfiguracoesPage user={user} onUserUpdate={handleUserUpdate} onToast={showToast} />
+      : null,
   }
+  const mobileNav = BOTTOM_NAV.filter(item => perms[item.perm] !== false)
 
   return (
     <div className="app-layout">
@@ -71,7 +75,7 @@ function AppContent() {
             <div style={{ width:28, height:28, background:'#2563eb', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center' }}><Layers size={15} style={{ color:'#fff' }}/></div>
             <span style={{ fontWeight:700, fontSize:14 }}>TetusManager</span>
           </div>
-          <button onClick={() => setPage('configuracoes')} style={{ background:'none', border:'none', cursor:'pointer', display:'flex' }}>
+          <button onClick={() => perms.verConfiguracoes !== false && setPage('configuracoes')} style={{ background:'none', border:'none', cursor:'pointer', display:'flex' }}>
             {user.foto ? <img src={user.foto} alt="Perfil" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }}/> : <Avatar name={user.nome} size={32}/>} 
           </button>
         </div>
@@ -86,7 +90,7 @@ function AppContent() {
             <button onClick={toggleTheme} title={`Mudar para modo ${theme === 'light' ? 'escuro' : 'claro'}`} style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
               {theme === 'light' ? <Moon size={17}/> : <Sun size={17}/>}
             </button>
-            <button onClick={() => setPage('configuracoes')} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-secondary)', border:'1px solid var(--border-color)', borderRadius:10, padding:'8px 14px', cursor:'pointer' }}>
+            <button onClick={() => perms.verConfiguracoes !== false && setPage('configuracoes')} style={{ display:'flex', alignItems:'center', gap:10, background:'var(--bg-secondary)', border:'1px solid var(--border-color)', borderRadius:10, padding:'8px 14px', cursor:'pointer' }}>
               {user.foto ? <img src={user.foto} alt="Perfil" style={{ width:30, height:30, borderRadius:'50%', objectFit:'cover' }}/> : <Avatar name={user.nome} size={30}/>} 
               <div style={{ textAlign:'left' }}>
                 <p style={{ fontSize:13, fontWeight:600, lineHeight:1.1 }}>{user.nome}</p>
@@ -100,7 +104,7 @@ function AppContent() {
       </main>
 
       <nav className="mobile-bottom-nav">
-        {BOTTOM_NAV.map(({ id, label, Icon }) => (
+        {mobileNav.map(({ id, label, Icon }) => (
           <button key={id} onClick={() => setPage(id)} className={page === id ? 'active' : ''}><Icon size={20}/>{label}</button>
         ))}
       </nav>
