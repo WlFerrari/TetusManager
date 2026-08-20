@@ -8,28 +8,17 @@ class ChapasController {
     } catch (e) { next(e) }
   }
 
-  // Alias do diagrama
-  async listarChapas(req, res, next) {
-    return this.list(req, res, next)
-  }
+  async listarChapas(req, res, next) { return this.list(req, res, next) }
 
   async show(req, res, next) {
     try {
       const data = await ChapaRepo.findById(req.params.id)
-      if (!data) {
-        return res.status(404).json({
-          ok: false,
-          msg: 'Chapa não encontrada.'
-        })
-      }
+      if (!data) return res.status(404).json({ ok: false, msg: 'Chapa não encontrada.' })
       res.json({ ok: true, data })
     } catch (e) { next(e) }
   }
 
-  // Alias do diagrama
-  async consultarChapa(req, res, next) {
-    return this.show(req, res, next)
-  }
+  async consultarChapa(req, res, next) { return this.show(req, res, next) }
 
   async stats(req, res, next) {
     try {
@@ -41,84 +30,38 @@ class ChapasController {
   async create(req, res, next) {
     try {
       const { nome, largura, comprimento } = req.body
+      if (!nome?.trim()) return res.status(400).json({ ok: false, msg: 'Nome é obrigatório.' })
+      if (!(+largura > 0)) return res.status(400).json({ ok: false, msg: 'Largura inválida.' })
+      if (!(+comprimento > 0)) return res.status(400).json({ ok: false, msg: 'Comprimento inválido.' })
 
-      // Validar
-      if (!nome?.trim()) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Nome é obrigatório.'
-        })
-      }
-      if (!(+largura > 0)) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Largura inválida.'
-        })
-      }
-      if (!(+comprimento > 0)) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Comprimento inválido.'
-        })
-      }
-
-      const data = await ChapaRepo.insert({
-        ...req.body,
-        criadoPor: req.user?.id || null,
-      })
-      res.status(201).json({
-        ok: true,
-        data,
-        msg: `Chapa "${data.nome}" cadastrada!`
-      })
+      const data = await ChapaRepo.insert({ ...req.body, criadoPor: req.user?.id || null })
+      res.status(201).json({ ok: true, data, msg: `Chapa "${data.nome}" cadastrada!` })
     } catch (e) { next(e) }
   }
 
-  // Alias do diagrama
-  async gravarChapa(req, res, next) {
-    return this.create(req, res, next)
-  }
+  async gravarChapa(req, res, next) { return this.create(req, res, next) }
 
   async update(req, res, next) {
     try {
-      if (!req.body.nome?.trim()) {
-        return res.status(400).json({
-          ok: false,
-          msg: 'Nome é obrigatório.'
-        })
-      }
-
+      if (!req.body.nome?.trim()) return res.status(400).json({ ok: false, msg: 'Nome é obrigatório.' })
       const data = await ChapaRepo.update(req.params.id, req.body)
-      res.json({
-        ok: true,
-        data,
-        msg: `Chapa "${data.nome}" atualizada!`
-      })
+      res.json({ ok: true, data, msg: `Chapa "${data.nome}" atualizada!` })
     } catch (e) { next(e) }
   }
 
-  // Alias do diagrama
-  async atualizarChapa(req, res, next) {
-    return this.update(req, res, next)
-  }
+  async atualizarChapa(req, res, next) { return this.update(req, res, next) }
 
-  async delete(req, res, next) {
+  async inactivate(req, res, next) {
     try {
-      const data = await ChapaRepo.delete(req.params.id)
-      res.json({
-        ok: true,
-        data,
-        msg: `Chapa "${data.nome}" excluída!`
-      })
+      const data = await ChapaRepo.inativar(req.params.id)
+      res.json({ ok: true, data, msg: `Chapa "${data.nome}" inativada. Histórico preservado.` })
     } catch (e) { next(e) }
   }
 
-  // Alias do diagrama
-  async excluirChapa(req, res, next) {
-    return this.delete(req, res, next)
-  }
+  // Compatibilidade com o endpoint antigo: DELETE agora executa exclusão lógica.
+  async delete(req, res, next) { return this.inactivate(req, res, next) }
+  async excluirChapa(req, res, next) { return this.inactivate(req, res, next) }
 
-  // Lista apenas chapas disponiveis (diagrama)
   async listarChapasDisponiveis(req, res, next) {
     try {
       const data = await ChapaRepo.listarDisponiveis()

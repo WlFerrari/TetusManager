@@ -22,9 +22,8 @@ function toModel(row) {
 }
 
 const CorteRepository = {
-  /** [C] CREATE */
-  async insert(data) {
-    const { rows } = await query(`
+  async insert(data, exec = query) {
+    const { rows } = await exec(`
       INSERT INTO cortes (
         os_numero, chapa_id, retalho_id,
         comprimento_consumido, largura_consumida,
@@ -47,10 +46,8 @@ const CorteRepository = {
     return toModel(rows[0])
   },
 
-  /** [R] READ ALL */
   async findAll(filtros = {}) {
     const { chapaId, retalhoId, osNumero, limit } = filtros || {}
-
     const where = []
     const params = []
     const add = (sql, val) => {
@@ -72,7 +69,6 @@ const CorteRepository = {
     return rows.map(toModel)
   },
 
-  /** Stats para dashboard */
   async stats() {
     const { rows } = await query(`
       SELECT
@@ -90,4 +86,3 @@ const CorteRepository = {
 }
 
 module.exports = CorteRepository
-

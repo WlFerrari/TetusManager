@@ -1,65 +1,47 @@
-# Diagramas de Estado (Mermaid)
+# Diagrama de Estados — TetusManager v1.2
 
-## Versao 1 — Chapa (inclui corte/retalho como transicao)
+Versão alinhada às especificações oficiais. Chapa e Retalho possuem ciclos de vida distintos.
+
+## Chapa
 
 ```mermaid
 stateDiagram-v2
     [*] --> Disponivel
-
-    Disponivel --> EmCorte: registrarCorte()
-    EmCorte --> Disponivel: corteParcial()
-    EmCorte --> Inativa: chapaEsgotada()
-
-    Disponivel --> Inativa: excluirChapa()
-    Inativa --> Disponivel: reativarChapa()
-    Disponivel --> [*]: finalizarChapa()
-
-    state Disponivel {
-        [*] --> Listada
-        Listada --> Selecionada: consultarDetalhes()
-        Selecionada --> Listada: voltarLista()
-    }
+    Disponivel --> EmUso: registrar corte / há sobra reutilizável
+    Disponivel --> Inativa: registrar corte / sem sobra
+    Disponivel --> Inativa: inativar chapa
+    EmUso --> Inativa: inativar chapa
+    Inativa --> Disponivel: reativar / quando permitido
 ```
 
-## Versao 2 — Retalho (gerado a partir da chapa)
+Estados persistidos:
+
+- `Disponível`
+- `Em uso`
+- `Inativa`
+
+A inativação é lógica e preserva cortes e retalhos relacionados.
+
+## Retalho
 
 ```mermaid
 stateDiagram-v2
-    [*] --> NaoExiste
-
-    NaoExiste --> Disponivel: gerarRetalho()
-    Disponivel --> Reservado: reservarRetalho()
-    Reservado --> Disponivel: cancelarReserva()
-    Disponivel --> Consumido: consumirRetalho()
-    Reservado --> Consumido: consumirRetalho()
-
+    [*] --> Disponivel
+    Disponivel --> Reservado: reservar
+    Reservado --> Disponivel: liberar reserva
+    Disponivel --> Consumido: consumir
+    Reservado --> Consumido: consumir
+    Disponivel --> Descartado: descartar
+    Reservado --> Descartado: descartar
     Consumido --> [*]
+    Descartado --> [*]
 ```
 
-## Versao 3 — Unificado (Chapa + Retalho em um unico diagrama)
+Estados persistidos:
 
-```mermaid
-stateDiagram-v2
-    state Chapa {
-        [*] --> Chapa_Disponivel
-        Chapa_Disponivel --> Chapa_EmCorte: registrarCorte()
-        Chapa_EmCorte --> Chapa_Disponivel: corteParcial()
-        Chapa_EmCorte --> Chapa_Inativa: chapaEsgotada()
-        Chapa_Disponivel --> Chapa_Inativa: excluirChapa()
-        Chapa_Inativa --> Chapa_Disponivel: reativarChapa()
-        Chapa_Disponivel --> [*]: finalizarChapa()
-    }
+- `Disponível`
+- `Reservado`
+- `Consumido`
+- `Descartado`
 
-    state Retalho {
-        [*] --> Retalho_NaoExiste
-        Retalho_NaoExiste --> Retalho_Disponivel: gerarRetalho()
-        Retalho_Disponivel --> Retalho_Reservado: reservarRetalho()
-        Retalho_Reservado --> Retalho_Disponivel: cancelarReserva()
-        Retalho_Disponivel --> Retalho_Consumido: consumirRetalho()
-        Retalho_Reservado --> Retalho_Consumido: consumirRetalho()
-        Retalho_Consumido --> [*]
-    }
-
-    Chapa_EmCorte --> Retalho_NaoExiste: iniciarCorte()
-    Chapa_EmCorte --> Retalho_Disponivel: retalhoGerado()
-```
+Retalhos consumidos e descartados permanecem no banco para rastreabilidade.

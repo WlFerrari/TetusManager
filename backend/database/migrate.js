@@ -10,8 +10,18 @@ const { query } = require('./connection')
 
 async function migrate() {
   console.log('Executando migrations...')
-  const sql = fs.readFileSync(path.join(__dirname, 'migrations.sql'), 'utf8')
-  await query(sql)
+
+  const files = [
+    'migrations.sql',
+    'alinhamento_v1_2.sql',
+  ]
+
+  for (const file of files) {
+    const sql = fs.readFileSync(path.join(__dirname, file), 'utf8')
+    await query(sql)
+    console.log(`✓ ${file}`)
+  }
+
   console.log('Migrations executadas com sucesso!')
   process.exit(0)
 }
