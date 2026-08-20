@@ -1,9 +1,8 @@
 /**
  * CAMADA DE MODELO (Model)
- * Define o schema (estrutura) de cada entidade do sistema.
+ * Estruturas e constantes oficiais do TetusManager.
  */
 
-// ── Permissões padrão por perfil ──────────────────────────────────────
 export const PERMISSOES_PADRAO = {
   Administrador: {
     verDashboard: true, verEstoque: true, editarEstoque: true,
@@ -33,6 +32,14 @@ export const LABELS_PERMISSOES = {
   verEmpresa: 'Ver dados da Empresa',
 }
 
+// O valor persistido continua "Vendedor" para manter compatibilidade com o banco.
+// Na documentação e na interface o ator oficial é Vendedor/Orçamentista.
+export const PERFIL_LABELS = {
+  Administrador: 'Administrador',
+  Estoquista: 'Estoquista',
+  Vendedor: 'Vendedor/Orçamentista',
+}
+
 export const mkChapa = (data = {}) => ({
   id: data.id || 'CH' + Date.now().toString().slice(-6),
   nome: String(data.nome || '').trim(),
@@ -42,6 +49,7 @@ export const mkChapa = (data = {}) => ({
   comprimento: Number(data.comprimento) || 0,
   espessura: Number(data.espessura) || 2,
   status: data.status || 'Disponível',
+  localizacao: data.localizacao || '',
   qrCode: data.qrCode || data.qr_code || '',
   foto: data.foto || null,
   criadoEm: data.criadoEm || new Date().toLocaleDateString('pt-BR'),
@@ -49,7 +57,8 @@ export const mkChapa = (data = {}) => ({
 
 export const mkRetalho = (data = {}) => ({
   id: data.id || 'RET-' + Date.now().toString().slice(-6),
-  origem: data.origem || '',
+  origem: data.origem || null,
+  origemTipo: data.origemTipo || data.origem_tipo || (data.origem ? 'AUTOMATICA' : 'MANUAL'),
   nome: String(data.nome || '').trim(),
   tipo: data.tipo || 'Granito',
   cor: data.cor || '#6b7280',
@@ -58,6 +67,7 @@ export const mkRetalho = (data = {}) => ({
   espessura: Number(data.espessura) || 2,
   area: Number(data.area) || 0,
   status: data.status || 'Disponível',
+  localizacao: data.localizacao || '',
   qrCode: data.qrCode || data.qr_code || '',
   foto: data.foto || null,
   consumidoEm: data.consumidoEm || null,
@@ -69,7 +79,7 @@ export const mkCorte = (data = {}) => ({
   id: data.id || Date.now(),
   osNumero: data.osNumero || data.os_numero || '',
   chapaId: data.chapaId || data.chapa_id || '',
-  retalhoId: data.retalhoId || data.retalho_id || '',
+  retalhoId: data.retalhoId || data.retalho_id || null,
   comprimentoConsumido: Number(data.comprimentoConsumido || data.comprimento_consumido) || 0,
   larguraConsumida: Number(data.larguraConsumida || data.largura_consumida) || 0,
   areaConsumida: Number(data.areaConsumida || data.area_consumida) || 0,
@@ -80,13 +90,14 @@ export const mkCorte = (data = {}) => ({
 
 export const mkUser = (data = {}) => {
   const perfil = data.perfil || 'Vendedor'
-  const base = PERMISSOES_PADRAO[perfil] || PERMISSOES_PADRAO['Vendedor']
+  const base = PERMISSOES_PADRAO[perfil] || PERMISSOES_PADRAO.Vendedor
   const permissoes = data.permissoes ? { ...base, ...data.permissoes } : { ...base }
   return {
     id: data.id || Date.now(),
     nome: String(data.nome || '').trim(),
     email: String(data.email || '').trim().toLowerCase(),
     perfil,
+    perfilLabel: PERFIL_LABELS[perfil] || perfil,
     status: data.status || 'Ativo',
     senha: data.senha || '123456',
     foto: data.foto || null,
@@ -108,7 +119,7 @@ export const mkEmpresa = (data = {}) => ({
   fundacao: data.fundacao || '2015',
 })
 
-export const TIPOS_ROCHA    = ['Granito', 'Mármore', 'Quartzito', 'Ardósia', 'Pedra Sabão']
+export const TIPOS_ROCHA = ['Granito', 'Mármore', 'Quartzito', 'Ardósia', 'Pedra Sabão']
 export const PERFIS_USUARIO = ['Administrador', 'Estoquista', 'Vendedor']
-export const STATUS_CHAPA   = ['Disponível', 'Em uso', 'Esgotado']
+export const STATUS_CHAPA = ['Disponível', 'Em uso', 'Inativa']
 export const STATUS_RETALHO = ['Disponível', 'Reservado', 'Consumido', 'Descartado']
