@@ -1,13 +1,11 @@
 /**
  * CAMADA DE REPOSITÓRIO (Repository)
- * Agora conecta com API REST real em vez de usar mock em memória.
- * Todas as operações vão para o backend e são persistidas em PostgreSQL.
+ * Conecta os controllers do frontend à API REST real.
  */
 
 import { ChapaService, RetalhoService, UsuarioService, EmpresaService, CorteService } from '../services/api.js'
 import { mkChapa, mkRetalho, mkUser, mkEmpresa, mkCorte } from '../models/index.js'
 
-// ── Repositório de Chapas (com API real) ──────────────────────────────
 export const chapaRepo = {
   findAll: async (filtro = '') => {
     const res = await ChapaService.listar(filtro)
@@ -31,6 +29,7 @@ export const chapaRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkChapa(res.data)
   },
+  // Mantido como delete por compatibilidade; o backend executa inativação lógica.
   delete: async (id) => {
     const res = await ChapaService.excluir(id)
     if (!res.ok) throw new Error(res.msg)
@@ -38,11 +37,10 @@ export const chapaRepo = {
   },
   stats: async () => {
     const res = await ChapaService.stats()
-    return res.ok ? res.data : { total: 0, disponiveis: 0, emUso: 0 }
+    return res.ok ? res.data : { total:0, disponiveis:0, emUso:0, inativas:0 }
   },
 }
 
-// ── Repositório de Retalhos (com API real) ────────────────────────────
 export const retalhoRepo = {
   findAll: async (filtro = '') => {
     const res = await RetalhoService.listar(filtro)
@@ -62,8 +60,13 @@ export const retalhoRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkRetalho(res.data)
   },
-  delete: async (id) => {
-    const res = await RetalhoService.excluir(id)
+  marcarReservado: async (id) => {
+    const res = await RetalhoService.marcarReservado(id)
+    if (!res.ok) throw new Error(res.msg)
+    return mkRetalho(res.data)
+  },
+  marcarDisponivel: async (id) => {
+    const res = await RetalhoService.liberarReserva(id)
     if (!res.ok) throw new Error(res.msg)
     return mkRetalho(res.data)
   },
@@ -77,18 +80,28 @@ export const retalhoRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkRetalho(res.data)
   },
+  // Compatibilidade: excluir significa descarte lógico.
+  delete: async (id) => {
+    const res = await RetalhoService.marcarDescartado(id)
+    if (!res.ok) throw new Error(res.msg)
+    return mkRetalho(res.data)
+  },
   stats: async () => {
     const res = await RetalhoService.stats()
-    return res.ok ? res.data : { total: 0, disponiveis: 0, reservados: 0, consumidos: 0, descartados: 0, areaTotal: 0 }
+    return res.ok ? res.data : { total:0, disponiveis:0, reservados:0, consumidos:0, descartados:0, areaTotal:0 }
   },
 }
 
-// ── Repositório de Cortes (com API real) ───────────────────────────────
 export const corteRepo = {
   registrar: async (data) => {
     const res = await CorteService.registrar(data)
     if (!res.ok) throw new Error(res.msg)
-    return { data: res.data, cortes: (res.cortes || []).map(mkCorte) }
+    return {
+      data: (res.data || []).map(mkRetalho),
+      cortes: (res.cortes || []).map(mkCorte),
+      semRetalho: !!res.semRetalho,
+      msg: res.msg,
+    }
   },
   listar: async (filters = {}) => {
     const res = await CorteService.listar(filters)
@@ -96,11 +109,10 @@ export const corteRepo = {
   },
   stats: async () => {
     const res = await CorteService.stats()
-    return res.ok ? res.data : { total: 0, areaConsumida: 0, areaRetalho: 0 }
+    return res.ok ? res.data : { total:0, areaConsumida:0, areaRetalho:0 }
   },
 }
 
-// ── Repositório de Usuários (com API real) ────────────────────────────
 export const userRepo = {
   findAll: async (filtro = '') => {
     const res = await UsuarioService.listar(filtro)
@@ -124,6 +136,7 @@ export const userRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkUser(res.data)
   },
+  // Compatibilidade: excluir passa a inativar no backend.
   delete: async (id) => {
     const res = await UsuarioService.excluir(id)
     if (!res.ok) throw new Error(res.msg)
@@ -144,9 +157,9 @@ export const userRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkUser(res.data)
   },
+  alterarSenha: async (senhaAtual, novaSenha) => UsuarioService.alterarSenha(senhaAtual, novaSenha),
 }
 
-// ── Repositório de Empresa (com API real) ─────────────────────────────
 export const empresaRepo = {
   get: async () => {
     const res = await EmpresaService.buscar()
