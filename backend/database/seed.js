@@ -34,7 +34,7 @@ async function seed() {
   // ── empresa ──────────────────────────────────────────────────────────
   await query(`
     INSERT INTO empresa (id, nome, cnpj, email, telefone, endereco, plano, fundacao)
-    VALUES (1, 'Tetus Marmoraria', '12.345.678/0001-90',
+    VALUES (1, 'Tetus Marmoraria', '12.345.678/0001-95',
             'contato@tetusmarmoraria.com.br', '(43) 3333-4444',
             'Rua das Pedras, 100 — Londrina, PR', 'Profissional', '2015')
     ON CONFLICT (id) DO NOTHING
