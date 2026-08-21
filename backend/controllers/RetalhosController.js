@@ -23,22 +23,22 @@ class RetalhosController {
       const invalid = validateFilters(req.query)
       if (invalid) return res.status(400).json({ ok:false, msg:invalid })
       const data = await RetalhoRepo.findAll(req.query || '')
-      res.json({ ok: true, data })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 
   async show(req, res, next) {
     try {
       const data = await RetalhoRepo.findById(req.params.id)
-      if (!data) return res.status(404).json({ ok: false, msg: 'Retalho não encontrado.' })
-      res.json({ ok: true, data })
+      if (!data) return res.status(404).json({ ok:false, msg:'Retalho não encontrado.' })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 
   async stats(req, res, next) {
     try {
       const data = await RetalhoRepo.stats()
-      res.json({ ok: true, data })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 
@@ -48,7 +48,7 @@ class RetalhosController {
       const payload = {
         ...req.body,
         origem,
-        origemTipo: origem ? 'AUTOMATICA' : 'MANUAL',
+        origemTipo:origem ? 'AUTOMATICA' : 'MANUAL',
         status:'Disponível',
         tipo:req.body.tipo || 'Granito',
         cor:req.body.cor || '#6b7280',
@@ -81,10 +81,9 @@ class RetalhosController {
       const atual = await RetalhoRepo.findById(req.params.id)
       if (!atual) return res.status(404).json({ ok:false, msg:'Retalho não encontrado.' })
       if (['Consumido','Descartado'].includes(atual.status)) {
-        return res.status(400).json({ ok:false, msg:'Retalhos consumidos ou descartados não podem ter seus dados físicos alterados.' })
+        return res.status(400).json({ ok:false, msg:'Reative o retalho antes de alterar seus dados físicos.' })
       }
 
-      // Origem e status são controlados por fluxos específicos e não pelo formulário de edição.
       const payload = {
         ...atual,
         ...req.body,
@@ -135,11 +134,14 @@ class RetalhosController {
     try {
       const atual = await RetalhoRepo.findById(req.params.id)
       if (!atual) return res.status(404).json({ ok:false, msg:'Retalho não encontrado.' })
+      if (atual.status === 'Consumido') {
+        return res.status(400).json({ ok:false, msg:'Este retalho já foi marcado como utilizado.' })
+      }
       if (!['Disponível','Reservado'].includes(atual.status)) {
-        return res.status(400).json({ ok:false, msg:'Este retalho não pode ser consumido no estado atual.' })
+        return res.status(400).json({ ok:false, msg:'Este retalho não pode ser marcado como utilizado no estado atual.' })
       }
       const data = await RetalhoRepo.marcarConsumido(req.params.id, req.user?.id || null)
-      res.json({ ok:true, data, msg:'Retalho marcado como consumido!' })
+      res.json({ ok:true, data, msg:'Retalho marcado como utilizado!' })
     } catch (e) { next(e) }
   }
 
@@ -148,13 +150,30 @@ class RetalhosController {
       const atual = await RetalhoRepo.findById(req.params.id)
       if (!atual) return res.status(404).json({ ok:false, msg:'Retalho não encontrado.' })
       if (atual.status === 'Consumido') {
-        return res.status(400).json({ ok:false, msg:'Retalho consumido não pode ser descartado.' })
+        return res.status(400).json({ ok:false, msg:'Retalho utilizado não pode ser descartado. Reative-o primeiro apenas se o status tiver sido informado incorretamente.' })
       }
       if (atual.status === 'Descartado') {
-        return res.json({ ok:true, data:atual, msg:'Este retalho já está descartado.' })
+        return res.status(400).json({ ok:false, msg:'Este retalho já está descartado.' })
       }
       const data = await RetalhoRepo.marcarDescartado(req.params.id, req.user?.id || null)
       res.json({ ok:true, data, msg:'Retalho descartado do inventário. Histórico preservado!' })
+    } catch (e) { next(e) }
+  }
+
+  async reactivate(req, res, next) {
+    try {
+      const atual = await RetalhoRepo.findById(req.params.id)
+      if (!atual) return res.status(404).json({ ok:false, msg:'Retalho não encontrado.' })
+      if (!['Consumido','Descartado'].includes(atual.status)) {
+        return res.status(400).json({ ok:false, msg:'Somente retalhos utilizados ou descartados podem ser reativados por correção de status.' })
+      }
+
+      const data = await RetalhoRepo.reativar(req.params.id)
+      res.json({
+        ok:true,
+        data,
+        msg:'Status corrigido. O retalho voltou a ficar disponível.',
+      })
     } catch (e) { next(e) }
   }
 
