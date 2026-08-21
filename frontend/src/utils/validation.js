@@ -15,6 +15,12 @@ export const LIMITS = {
   endereco:220,
 }
 
+const compactErrors = errors => Object.fromEntries(
+  Object.entries(errors).filter(([, value]) => Boolean(value))
+)
+
+export const firstError = errors => Object.values(errors || {}).find(Boolean) || null
+
 const dataUrlBytes = dataUrl => {
   const base64 = String(dataUrl || '').split(',')[1] || ''
   return Math.ceil(base64.length * 3 / 4)
@@ -45,7 +51,8 @@ export function positiveNumber(value, label, { max=10000, allowZero=false }={}) 
 export function nonNegativeFilter(value, label) {
   if (value === '' || value === null || value === undefined) return null
   const n = Number(value)
-  if (!Number.isFinite(n) || n < 0) return `${label} não pode ser negativo.`
+  if (!Number.isFinite(n)) return `${label} deve ser um número válido.`
+  if (n < 0) return `${label} não pode ser negativo.`
   return null
 }
 
@@ -170,66 +177,95 @@ export async function prepareImageFile(file) {
   }
 }
 
-export function validateChapa(data) {
-  return requiredText(data.nome, 'Nome', LIMITS.nome)
-    || (!TIPOS_ROCHA.includes(data.tipo) ? 'Tipo de material inválido.' : null)
-    || positiveNumber(data.largura, 'Largura')
-    || positiveNumber(data.comprimento, 'Comprimento')
-    || positiveNumber(data.espessura, 'Espessura', { max:100 })
-    || optionalText(data.localizacao, 'Localização', LIMITS.localizacao)
-    || hexColor(data.cor)
-    || (!['Disponível','Em uso','Inativa'].includes(data.status || 'Disponível') ? 'Status da chapa inválido.' : null)
-    || imageDataUrl(data.foto)
+export function chapaFieldErrors(data={}) {
+  return compactErrors({
+    nome: requiredText(data.nome, 'Nome', LIMITS.nome),
+    tipo: !TIPOS_ROCHA.includes(data.tipo) ? 'Selecione um tipo de material válido.' : null,
+    largura: positiveNumber(data.largura, 'Largura'),
+    comprimento: positiveNumber(data.comprimento, 'Comprimento'),
+    espessura: positiveNumber(data.espessura, 'Espessura', { max:100 }),
+    localizacao: optionalText(data.localizacao, 'Localização', LIMITS.localizacao),
+    cor: hexColor(data.cor),
+    status: !['Disponível','Em uso','Inativa'].includes(data.status || 'Disponível') ? 'Status da chapa inválido.' : null,
+    foto: imageDataUrl(data.foto),
+  })
 }
 
-export function validateRetalho(data) {
+export function retalhoFieldErrors(data={}) {
   const origemTipo = data.origemTipo || data.origem_tipo || (data.origem ? 'AUTOMATICA' : 'MANUAL')
-  return requiredText(data.nome, 'Nome', LIMITS.nome)
-    || (!TIPOS_ROCHA.includes(data.tipo) ? 'Tipo de material inválido.' : null)
-    || positiveNumber(data.largura, 'Largura')
-    || positiveNumber(data.comprimento, 'Comprimento')
-    || positiveNumber(data.espessura, 'Espessura', { max:100 })
-    || optionalText(data.localizacao, 'Localização', LIMITS.localizacao)
-    || optionalText(data.origem, 'Chapa de origem', 80)
-    || (!['AUTOMATICA','MANUAL'].includes(origemTipo) ? 'Tipo de origem do retalho inválido.' : null)
-    || (origemTipo === 'AUTOMATICA' && !String(data.origem || '').trim() ? 'Retalho automático deve possuir chapa de origem.' : null)
-    || hexColor(data.cor)
-    || (!['Disponível','Reservado','Consumido','Descartado'].includes(data.status || 'Disponível') ? 'Status do retalho inválido.' : null)
-    || imageDataUrl(data.foto)
+  return compactErrors({
+    nome: requiredText(data.nome, 'Nome', LIMITS.nome),
+    tipo: !TIPOS_ROCHA.includes(data.tipo) ? 'Selecione um tipo de material válido.' : null,
+    largura: positiveNumber(data.largura, 'Largura'),
+    comprimento: positiveNumber(data.comprimento, 'Comprimento'),
+    espessura: positiveNumber(data.espessura, 'Espessura', { max:100 }),
+    localizacao: optionalText(data.localizacao, 'Localização', LIMITS.localizacao),
+    origem: optionalText(data.origem, 'Chapa de origem', 80)
+      || (origemTipo === 'AUTOMATICA' && !String(data.origem || '').trim() ? 'Informe a chapa de origem para um retalho automático.' : null),
+    origemTipo: !['AUTOMATICA','MANUAL'].includes(origemTipo) ? 'Tipo de origem do retalho inválido.' : null,
+    cor: hexColor(data.cor),
+    status: !['Disponível','Reservado','Consumido','Descartado'].includes(data.status || 'Disponível') ? 'Status do retalho inválido.' : null,
+    foto: imageDataUrl(data.foto),
+  })
 }
 
-export function validateCorte(data, chapa) {
-  return requiredText(data.osNumero, 'Número da OS', LIMITS.osNumero)
-    || requiredText(data.chapaId, 'Chapa de origem', 80)
-    || positiveNumber(data.cc, 'Comprimento consumido')
-    || positiveNumber(data.lc, 'Largura consumida')
-    || optionalText(data.obs, 'Observações', LIMITS.observacao)
-    || (chapa && Number(data.cc) > Number(chapa.comprimento) ? 'O comprimento consumido é maior que o comprimento da chapa.' : null)
-    || (chapa && Number(data.lc) > Number(chapa.largura) ? 'A largura consumida é maior que a largura da chapa.' : null)
+export function corteFieldErrors(data={}, chapa=null) {
+  return compactErrors({
+    osNumero: requiredText(data.osNumero, 'Número da OS', LIMITS.osNumero),
+    chapaId: requiredText(data.chapaId, 'Chapa de origem', 80),
+    cc: positiveNumber(data.cc, 'Comprimento consumido')
+      || (chapa && Number(data.cc) > Number(chapa.comprimento) ? `O comprimento não pode ser maior que ${chapa.comprimento} cm para esta chapa.` : null),
+    lc: positiveNumber(data.lc, 'Largura consumida')
+      || (chapa && Number(data.lc) > Number(chapa.largura) ? `A largura não pode ser maior que ${chapa.largura} cm para esta chapa.` : null),
+    obs: optionalText(data.obs, 'Observações', LIMITS.observacao),
+  })
 }
 
-export function validateUser(data, { requirePassword=false }={}) {
-  return requiredText(data.nome, 'Nome', LIMITS.nome)
-    || email(data.email)
-    || phone(data.telefone)
-    || optionalText(data.cargo, 'Cargo', LIMITS.cargo)
-    || (!['Administrador','Estoquista','Vendedor'].includes(data.perfil) ? 'Perfil de usuário inválido.' : null)
-    || (!['Ativo','Inativo'].includes(data.status || 'Ativo') ? 'Status de usuário inválido.' : null)
-    || (requirePassword ? password(data.senha, 'Senha inicial') : null)
+export function userFieldErrors(data={}, { requirePassword=false }={}) {
+  return compactErrors({
+    nome: requiredText(data.nome, 'Nome', LIMITS.nome),
+    email: email(data.email),
+    telefone: phone(data.telefone),
+    cargo: optionalText(data.cargo, 'Cargo', LIMITS.cargo),
+    perfil: !['Administrador','Estoquista','Vendedor'].includes(data.perfil) ? 'Perfil de usuário inválido.' : null,
+    status: !['Ativo','Inativo'].includes(data.status || 'Ativo') ? 'Status de usuário inválido.' : null,
+    senha: requirePassword ? password(data.senha, 'Senha inicial') : null,
+  })
 }
 
-export function validateProfile(data) {
-  return requiredText(data.nome, 'Nome', LIMITS.nome)
-    || phone(data.telefone)
-    || optionalText(data.cargo, 'Cargo', LIMITS.cargo)
-    || imageDataUrl(data.foto)
+export function profileFieldErrors(data={}) {
+  return compactErrors({
+    nome: requiredText(data.nome, 'Nome', LIMITS.nome),
+    telefone: phone(data.telefone),
+    cargo: optionalText(data.cargo, 'Cargo', LIMITS.cargo),
+    foto: imageDataUrl(data.foto),
+  })
 }
 
-export function validateCompany(data) {
-  return requiredText(data.nome, 'Nome da empresa', LIMITS.nome)
-    || (!validCnpj(data.cnpj) ? 'CNPJ inválido.' : null)
-    || email(data.email)
-    || phone(data.telefone)
-    || optionalText(data.endereco, 'Endereço', LIMITS.endereco)
-    || imageDataUrl(data.logo)
+export function companyFieldErrors(data={}) {
+  return compactErrors({
+    nome: requiredText(data.nome, 'Nome da empresa', LIMITS.nome),
+    cnpj: !validCnpj(data.cnpj) ? 'Informe um CNPJ válido com 14 dígitos.' : null,
+    email: email(data.email),
+    telefone: phone(data.telefone),
+    endereco: optionalText(data.endereco, 'Endereço', LIMITS.endereco),
+    logo: imageDataUrl(data.logo),
+  })
 }
+
+export function passwordFieldErrors(data={}) {
+  return compactErrors({
+    atual: password(data.atual, 'Senha atual'),
+    nova: password(data.nova, 'Nova senha')
+      || (data.nova === data.atual && data.nova ? 'A nova senha deve ser diferente da senha atual.' : null),
+    confirma: !String(data.confirma || '') ? 'Confirme a nova senha.'
+      : data.nova !== data.confirma ? 'A confirmação deve ser igual à nova senha.' : null,
+  })
+}
+
+export function validateChapa(data) { return firstError(chapaFieldErrors(data)) }
+export function validateRetalho(data) { return firstError(retalhoFieldErrors(data)) }
+export function validateCorte(data, chapa) { return firstError(corteFieldErrors(data, chapa)) }
+export function validateUser(data, options={}) { return firstError(userFieldErrors(data, options)) }
+export function validateProfile(data) { return firstError(profileFieldErrors(data)) }
+export function validateCompany(data) { return firstError(companyFieldErrors(data)) }
