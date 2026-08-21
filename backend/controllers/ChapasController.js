@@ -1,4 +1,5 @@
 const ChapaRepo = require('../repositories/ChapaRepository')
+const CorteRepo = require('../repositories/CorteRepository')
 const { validateChapa } = require('../utils/validation')
 
 function validateFilters(query = {}) {
@@ -95,6 +96,15 @@ class ChapasController {
       if (atual.status !== 'Inativa') {
         return res.status(400).json({ ok:false, msg:'Somente chapas inativas podem ser reativadas.' })
       }
+
+      const cortes = await CorteRepo.findAll({ chapaId:req.params.id, limit:1 })
+      if (cortes.length) {
+        return res.status(400).json({
+          ok:false,
+          msg:'Esta chapa possui histórico de corte e não pode voltar ao estoque como disponível.',
+        })
+      }
+
       const data = await ChapaRepo.setStatus(req.params.id, 'Disponível')
       res.json({ ok:true, data, msg:`Chapa "${data.nome}" reativada e disponível novamente.` })
     } catch (e) { next(e) }
