@@ -41,6 +41,10 @@ A exclusão operacional é **lógica**. O endpoint legado `DELETE /chapas/:id` f
 
 Chapas podem registrar `localizacao` física opcional para aproximar o inventário digital do pátio.
 
+O estado `Em uso` continua disponível no domínio para representar uma peça em processamento operacional. Entretanto, ao concluir o UC04, a chapa de origem passa para `Inativa`, pois ela não existe mais fisicamente com suas dimensões originais. Se houver sobra reutilizável, essa sobra passa a ser controlada exclusivamente como um novo retalho.
+
+Uma chapa que já possui corte registrado não pode ser reativada como `Disponível`, evitando recriar no estoque uma área que já foi consumida ou transformada em retalho.
+
 ## Regras de retalhos
 
 Estados oficiais:
@@ -61,7 +65,9 @@ Um retalho manual pode ter `origem = NULL`; não é criada uma chapa fictícia a
 
 ## Registro de corte
 
-O corte é persistido mesmo quando não existe sobra reutilizável. Nesse cenário:
+Todo corte concluído transforma a chapa de origem em registro histórico `Inativa`. A chapa original não permanece simultaneamente no estoque com a sobra, pois isso duplicaria a quantidade física de material disponível.
+
+Quando não existe sobra reutilizável:
 
 - `cortes.retalho_id` permanece nulo;
 - a chapa de origem é inativada;
@@ -72,9 +78,10 @@ Quando existe sobra reutilizável:
 - o retalho herda tipo, cor, espessura e localização da chapa quando esses valores não forem informados;
 - recebe origem automática e vínculo com a chapa;
 - recebe identificador e QR Code persistentes;
-- a chapa passa para `Em uso`.
+- a chapa de origem é inativada;
+- somente o retalho representa a área física restante no estoque.
 
-A operação de corte é transacional: corte, retalho e atualização da chapa são confirmados ou revertidos juntos.
+A operação de corte é transacional: corte, eventual retalho e inativação da chapa são confirmados ou revertidos juntos.
 
 ### Modelo geométrico atual
 
@@ -119,6 +126,8 @@ A migration `backend/database/alinhamento_v1_2.sql` complementa o schema existen
 - `retalhos.origem_tipo`;
 - `retalhos.localizacao`;
 - garantia de `cortes.retalho_id` opcional;
+- compatibilidade do número da OS como campo textual;
+- correção de chapas antigas que permaneceram `Em uso` mesmo após possuir corte;
 - índices auxiliares de localização e origem.
 
 Execute normalmente:
