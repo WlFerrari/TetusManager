@@ -200,6 +200,13 @@ class RetalhoController {
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
+  async reativar(id) {
+    try {
+      const e = await this.r.reativar(id)
+      return {ok:1,data:e,msg:'Status corrigido. O retalho voltou a ficar disponível.'}
+    } catch(e) { return {ok:0,msg:e.message} }
+  }
+
   async excluir(id) { return this.marcarDescartado(id) }
 
   async stats() {
