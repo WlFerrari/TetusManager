@@ -7,7 +7,7 @@ import {
   SectionHeader, SearchInput,
 } from '../components/UI.jsx'
 import QRCodeModal from '../components/QRCodeModal.jsx'
-import { LIMITS, prepareImageFile, validateChapa } from '../../utils/validation.js'
+import { LIMITS, chapaFieldErrors, prepareImageFile } from '../../utils/validation.js'
 
 const BLANK = {
   nome:'', tipo:'Granito', cor:'#6b7280', largura:'', comprimento:'',
@@ -25,6 +25,7 @@ export default function ChapasPage({ onUpdate, user }) {
   const [form, setForm] = useState(BLANK)
   const [target, setTarget] = useState(null)
   const [erro, setErro] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [lista, setLista] = useState([])
   const [loading, setLoading] = useState(false)
   const [qrCodeItem, setQrCodeItem] = useState(null)
@@ -42,6 +43,7 @@ export default function ChapasPage({ onUpdate, user }) {
 
   const F = (k,v) => {
     setErro('')
+    setFieldErrors(errors => ({ ...errors, [k]:null }))
     setForm(f => ({ ...f, [k]:v }))
   }
   const FF = (k,v) => setFilters(f => ({ ...f, [k]:v }))
@@ -50,7 +52,18 @@ export default function ChapasPage({ onUpdate, user }) {
     const n = Number(v)
     if (Number.isFinite(n) && n >= 0) FF(k, v)
   }
-  const close = () => { setModal(null); setTarget(null); setErro(''); setHistory([]) }
+  const close = () => {
+    setModal(null)
+    setTarget(null)
+    setErro('')
+    setFieldErrors({})
+    setHistory([])
+  }
+
+  function validateField(key) {
+    const errors = chapaFieldErrors({ ...form, status:form.status || 'Disponível' })
+    setFieldErrors(current => ({ ...current, [key]:errors[key] || null }))
+  }
 
   async function handleFoto(e) {
     const input = e.target
@@ -60,7 +73,7 @@ export default function ChapasPage({ onUpdate, user }) {
     const result = await prepareImageFile(file)
     input.value = ''
     if (!result.ok) {
-      setErro(result.msg)
+      setFieldErrors(errors => ({ ...errors, foto:result.msg }))
       return
     }
     F('foto', result.data)
@@ -73,15 +86,21 @@ export default function ChapasPage({ onUpdate, user }) {
     setHistory(r.ok ? r.data : [])
   }
 
-  function validateForm() {
-    const msg = validateChapa({ ...form, status:form.status || 'Disponível' })
-    if (msg) setErro(msg)
-    return !msg
+  function validateForm(payload) {
+    const errors = chapaFieldErrors(payload)
+    setFieldErrors(errors)
+    if (Object.keys(errors).length) {
+      setErro('Revise os campos destacados antes de continuar.')
+      return false
+    }
+    setErro('')
+    return true
   }
 
   async function handleAdd() {
-    if (!validateForm()) return
-    const r = await chapaCtrl.gravarChapa({ ...form, status:'Disponível' })
+    const payload = { ...form, status:'Disponível' }
+    if (!validateForm(payload)) return
+    const r = await chapaCtrl.gravarChapa(payload)
     if (!r.ok) return setErro(r.msg)
     onUpdate(r.msg, 'ok')
     await carregarChapas()
@@ -89,7 +108,7 @@ export default function ChapasPage({ onUpdate, user }) {
   }
 
   async function handleEdit() {
-    if (!validateForm()) return
+    if (!validateForm(form)) return
     const r = await chapaCtrl.atualizarChapa(form.id, form)
     if (!r.ok) return setErro(r.msg)
     onUpdate(r.msg, 'ok')
@@ -117,7 +136,7 @@ export default function ChapasPage({ onUpdate, user }) {
               {showFilters ? 'Ocultar filtros' : `Filtros (${activeFilters})`}
             </BtnSecondary>
             {canEdit && (
-              <BtnPrimary onClick={() => { setForm({ ...BLANK }); setErro(''); setModal('add') }}>
+              <BtnPrimary onClick={() => { setForm({ ...BLANK }); setErro(''); setFieldErrors({}); setModal('add') }}>
                 <Plus size={14}/> Nova Chapa
               </BtnPrimary>
             )}
@@ -184,7 +203,7 @@ export default function ChapasPage({ onUpdate, user }) {
                   <Eye size={11}/> Ver
                 </button>
                 {canEdit && <BtnIcon title="QR Code" onClick={() => setQrCodeItem(c)}><QrCode size={12}/></BtnIcon>}
-                {canEdit && c.status !== 'Inativa' && <BtnIcon title="Editar" onClick={() => { setForm({ ...c }); setErro(''); setModal('edit') }}><Edit2 size={12}/></BtnIcon>}
+                {canEdit && c.status !== 'Inativa' && <BtnIcon title="Editar" onClick={() => { setForm({ ...c }); setErro(''); setFieldErrors({}); setModal('edit') }}><Edit2 size={12}/></BtnIcon>}
                 {canEdit && c.status !== 'Inativa' && <BtnIcon title="Inativar" danger onClick={() => handleInativar(c)}><Ban size={12}/></BtnIcon>}
               </div>
             </div>
@@ -219,25 +238,28 @@ export default function ChapasPage({ onUpdate, user }) {
       {(modal === 'add' || modal === 'edit') && (
         <Modal title={modal === 'add' ? 'Nova Chapa' : 'Editar Chapa'} onClose={close}>
           {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
-          <FormField label="Nome da Chapa *"><input maxLength={LIMITS.nome} value={form.nome} onChange={e => F('nome', e.target.value)} /></FormField>
-          <FormField label="Foto do lote (JPG, PNG ou WEBP)">
+          <FormField label="Nome da Chapa *" error={fieldErrors.nome}>
+            <input maxLength={LIMITS.nome} value={form.nome} onChange={e => F('nome', e.target.value)} onBlur={() => validateField('nome')} />
+          </FormField>
+          <FormField label="Foto do lote (JPG, PNG ou WEBP)" error={fieldErrors.foto} hint="A imagem é validada, redimensionada para até 1280 px e comprimida para até 500 KB.">
             <div style={{ display:'flex', gap:8, alignItems:'center' }}>
               <label style={{ display:'inline-flex', gap:6, alignItems:'center', cursor:'pointer', border:'1px solid #e5e7eb', borderRadius:8, padding:'8px 12px', fontSize:12 }}>
                 <Camera size={14}/> Enviar foto<input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFoto} style={{ display:'none' }}/>
               </label>
               {form.foto && <button type="button" onClick={() => F('foto', null)} title="Remover foto" style={{ border:'none', background:'transparent', color:'#dc2626', cursor:'pointer', display:'flex' }}><X size={16}/></button>}
             </div>
-            <p style={{ fontSize:10, color:'#9ca3af', marginTop:4 }}>A imagem é validada, redimensionada para até 1280 px e comprimida para até 500 KB.</p>
           </FormField>
           <div className="form-grid-2">
-            <FormField label="Tipo"><select value={form.tipo} onChange={e => F('tipo',e.target.value)}>{TIPOS_ROCHA.map(v => <option key={v}>{v}</option>)}</select></FormField>
-            <FormField label="Cor"><input type="color" value={form.cor} onChange={e => F('cor',e.target.value)}/></FormField>
-            <FormField label="Largura (cm) *"><input type="number" min="0.01" max="10000" step="0.01" value={form.largura} onChange={e => F('largura',e.target.value)}/></FormField>
-            <FormField label="Comprimento (cm) *"><input type="number" min="0.01" max="10000" step="0.01" value={form.comprimento} onChange={e => F('comprimento',e.target.value)}/></FormField>
-            <FormField label="Espessura (cm) *"><input type="number" min="0.01" max="100" step="0.01" value={form.espessura} onChange={e => F('espessura',e.target.value)}/></FormField>
-            <FormField label="Status"><input value={form.status || 'Disponível'} disabled/></FormField>
+            <FormField label="Tipo" error={fieldErrors.tipo}><select value={form.tipo} onChange={e => F('tipo',e.target.value)} onBlur={() => validateField('tipo')}>{TIPOS_ROCHA.map(v => <option key={v}>{v}</option>)}</select></FormField>
+            <FormField label="Cor" error={fieldErrors.cor}><input type="color" value={form.cor} onChange={e => F('cor',e.target.value)} onBlur={() => validateField('cor')}/></FormField>
+            <FormField label="Largura (cm) *" error={fieldErrors.largura}><input type="number" min="0.01" max="10000" step="0.01" value={form.largura} onChange={e => F('largura',e.target.value)} onBlur={() => validateField('largura')}/></FormField>
+            <FormField label="Comprimento (cm) *" error={fieldErrors.comprimento}><input type="number" min="0.01" max="10000" step="0.01" value={form.comprimento} onChange={e => F('comprimento',e.target.value)} onBlur={() => validateField('comprimento')}/></FormField>
+            <FormField label="Espessura (cm) *" error={fieldErrors.espessura}><input type="number" min="0.01" max="100" step="0.01" value={form.espessura} onChange={e => F('espessura',e.target.value)} onBlur={() => validateField('espessura')}/></FormField>
+            <FormField label="Status" error={fieldErrors.status}><input value={form.status || 'Disponível'} disabled/></FormField>
           </div>
-          <FormField label="Localização física"><input maxLength={LIMITS.localizacao} value={form.localizacao || ''} onChange={e => F('localizacao',e.target.value)} placeholder="Ex: Pátio A - Cavalete 03"/></FormField>
+          <FormField label="Localização física" error={fieldErrors.localizacao}>
+            <input maxLength={LIMITS.localizacao} value={form.localizacao || ''} onChange={e => F('localizacao',e.target.value)} onBlur={() => validateField('localizacao')} placeholder="Ex: Pátio A - Cavalete 03"/>
+          </FormField>
           <div style={{ display:'flex', gap:8 }}>
             <BtnSecondary onClick={close}>Cancelar</BtnSecondary>
             <BtnPrimary onClick={modal === 'add' ? handleAdd : handleEdit} style={{ flex:1, justifyContent:'center' }}>
