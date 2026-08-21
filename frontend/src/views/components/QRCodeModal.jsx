@@ -3,12 +3,19 @@ import { Download, X } from 'lucide-react'
 import QRCode from 'qrcode.react'
 import html2canvas from 'html2canvas'
 
-export default function QRCodeModal({ item, type = 'chapa', onClose }) {
-  const qrRef = useRef()
+const escapeHtml = value => String(value ?? '')
+  .replace(/&/g, '&amp;')
+  .replace(/</g, '&lt;')
+  .replace(/>/g, '&gt;')
+  .replace(/"/g, '&quot;')
+  .replace(/'/g, '&#039;')
 
-  // Identificador persistente: os detalhes da peça ficam no sistema e podem mudar
-  // sem tornar a etiqueta impressa obsoleta.
-  const qrValue = item?.qrCode || `TETUS|${type.toUpperCase()}|${item.id}`
+export default function QRCodeModal({ item, type='chapa', onClose }) {
+  const qrRef = useRef()
+  if (!item?.id) return null
+
+  const safeType = type === 'retalho' ? 'retalho' : 'chapa'
+  const qrValue = item.qrCode || `TETUS|${safeType.toUpperCase()}|${item.id}`
 
   async function downloadQRCode() {
     const element = qrRef.current
@@ -17,7 +24,7 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
       const canvas = await html2canvas(element, { backgroundColor:'#ffffff', scale:2 })
       const link = document.createElement('a')
       link.href = canvas.toDataURL('image/png')
-      link.download = `qrcode-${type}-${item.id}.png`
+      link.download = `qrcode-${safeType}-${String(item.id).replace(/[^a-zA-Z0-9_-]/g, '')}.png`
       link.click()
     } catch (error) {
       console.error('Erro ao baixar QR code:', error)
@@ -28,10 +35,20 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
     const element = qrRef.current
     if (!element) return
     const printWindow = window.open('', '', 'width=420,height=560')
+    if (!printWindow) return
+
+    const nome = escapeHtml(item.nome)
+    const id = escapeHtml(item.id)
+    const tipo = escapeHtml(item.tipo)
+    const largura = escapeHtml(item.largura)
+    const comprimento = escapeHtml(item.comprimento)
+    const espessura = escapeHtml(item.espessura)
+    const localizacao = escapeHtml(item.localizacao)
+
     printWindow.document.write(`
       <html>
         <head>
-          <title>QR Code - ${item.nome}</title>
+          <title>QR Code - ${nome}</title>
           <style>
             body { text-align:center; font-family:Arial,sans-serif; padding:20px; }
             h2 { margin:10px 0; font-size:18px; }
@@ -39,10 +56,10 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
           </style>
         </head>
         <body>
-          <h2>${item.nome}</h2>
-          <p>ID: ${item.id}</p>
-          <p>${item.tipo} · ${item.largura} × ${item.comprimento} cm · ${item.espessura} cm</p>
-          ${item.localizacao ? `<p>Localização: ${item.localizacao}</p>` : ''}
+          <h2>${nome}</h2>
+          <p>ID: ${id}</p>
+          <p>${tipo} · ${largura} × ${comprimento} cm · ${espessura} cm</p>
+          ${localizacao ? `<p>Localização: ${localizacao}</p>` : ''}
           ${element.innerHTML}
         </body>
       </html>
@@ -52,14 +69,8 @@ export default function QRCodeModal({ item, type = 'chapa', onClose }) {
   }
 
   return (
-    <div
-      style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }}
-      onClick={onClose}
-    >
-      <div
-        style={{ position:'relative', background:'var(--bg-secondary)', borderRadius:12, padding:32, width:'90%', maxWidth:420, boxShadow:'0 20px 25px rgba(0,0,0,.15)', border:'1px solid var(--border-color)' }}
-        onClick={e => e.stopPropagation()}
-      >
+    <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.5)', display:'flex', alignItems:'center', justifyContent:'center', zIndex:1000 }} onClick={onClose}>
+      <div style={{ position:'relative', background:'var(--bg-secondary)', borderRadius:12, padding:32, width:'90%', maxWidth:420, boxShadow:'0 20px 25px rgba(0,0,0,.15)', border:'1px solid var(--border-color)' }} onClick={e => e.stopPropagation()}>
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:24 }}>
           <div>
             <h2 style={{ fontSize:18, fontWeight:700, color:'var(--text-primary)', margin:0 }}>QR Code</h2>
