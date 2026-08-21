@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Camera, Edit2, Eye, Plus, QrCode, Ban } from 'lucide-react'
+import { Ban, Camera, Edit2, Eye, Plus, QrCode, X } from 'lucide-react'
 import { chapaCtrl, corteCtrl } from '../../controllers/index.js'
 import { STATUS_CHAPA, TIPOS_ROCHA } from '../../models/index.js'
 import {
@@ -7,6 +7,7 @@ import {
   SectionHeader, SearchInput,
 } from '../components/UI.jsx'
 import QRCodeModal from '../components/QRCodeModal.jsx'
+import { LIMITS, prepareImageFile, validateChapa } from '../../utils/validation.js'
 
 const BLANK = {
   nome:'', tipo:'Granito', cor:'#6b7280', largura:'', comprimento:'',
@@ -35,19 +36,34 @@ export default function ChapasPage({ onUpdate, user }) {
     setLoading(true)
     const r = await chapaCtrl.listarChapas(filters)
     setLista(r.ok ? r.data : [])
+    if (!r.ok && r.msg) onUpdate?.(r.msg, 'err')
     setLoading(false)
   }
 
-  const F = (k,v) => setForm(f => ({ ...f, [k]:v }))
+  const F = (k,v) => {
+    setErro('')
+    setForm(f => ({ ...f, [k]:v }))
+  }
   const FF = (k,v) => setFilters(f => ({ ...f, [k]:v }))
+  const FFNumber = (k,v) => {
+    if (v === '') return FF(k, '')
+    const n = Number(v)
+    if (Number.isFinite(n) && n >= 0) FF(k, v)
+  }
   const close = () => { setModal(null); setTarget(null); setErro(''); setHistory([]) }
 
-  function handleFoto(e) {
-    const file = e.target.files?.[0]
+  async function handleFoto(e) {
+    const input = e.target
+    const file = input.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => F('foto', ev.target.result)
-    reader.readAsDataURL(file)
+
+    const result = await prepareImageFile(file)
+    input.value = ''
+    if (!result.ok) {
+      setErro(result.msg)
+      return
+    }
+    F('foto', result.data)
   }
 
   async function openView(chapa) {
@@ -57,8 +73,15 @@ export default function ChapasPage({ onUpdate, user }) {
     setHistory(r.ok ? r.data : [])
   }
 
+  function validateForm() {
+    const msg = validateChapa({ ...form, status:form.status || 'Disponível' })
+    if (msg) setErro(msg)
+    return !msg
+  }
+
   async function handleAdd() {
-    const r = await chapaCtrl.gravarChapa(form)
+    if (!validateForm()) return
+    const r = await chapaCtrl.gravarChapa({ ...form, status:'Disponível' })
     if (!r.ok) return setErro(r.msg)
     onUpdate(r.msg, 'ok')
     await carregarChapas()
@@ -66,6 +89,7 @@ export default function ChapasPage({ onUpdate, user }) {
   }
 
   async function handleEdit() {
+    if (!validateForm()) return
     const r = await chapaCtrl.atualizarChapa(form.id, form)
     if (!r.ok) return setErro(r.msg)
     onUpdate(r.msg, 'ok')
@@ -93,7 +117,7 @@ export default function ChapasPage({ onUpdate, user }) {
               {showFilters ? 'Ocultar filtros' : `Filtros (${activeFilters})`}
             </BtnSecondary>
             {canEdit && (
-              <BtnPrimary onClick={() => { setForm(BLANK); setModal('add') }}>
+              <BtnPrimary onClick={() => { setForm({ ...BLANK }); setErro(''); setModal('add') }}>
                 <Plus size={14}/> Nova Chapa
               </BtnPrimary>
             )}
@@ -101,7 +125,7 @@ export default function ChapasPage({ onUpdate, user }) {
         }
       />
 
-      <SearchInput value={filters.q} onChange={v => FF('q',v)} placeholder="Buscar por nome, tipo, ID ou localização…" />
+      <SearchInput value={filters.q} onChange={v => FF('q',v.slice(0,120))} placeholder="Buscar por nome, tipo, ID ou localização…" />
 
       {showFilters && (
         <div className="card" style={{ padding:12, marginBottom:12 }}>
@@ -119,16 +143,16 @@ export default function ChapasPage({ onUpdate, user }) {
               </select>
             </FormField>
             <FormField label="Localização">
-              <input value={filters.localizacao} onChange={e => FF('localizacao', e.target.value)} placeholder="Ex: Pátio A" />
+              <input maxLength={LIMITS.localizacao} value={filters.localizacao} onChange={e => FF('localizacao', e.target.value)} placeholder="Ex: Pátio A" />
             </FormField>
             <FormField label="Espessura (cm)">
-              <input type="number" value={filters.espessura} onChange={e => FF('espessura', e.target.value)} />
+              <input type="number" min="0" max="100" step="0.01" value={filters.espessura} onChange={e => FFNumber('espessura', e.target.value)} />
             </FormField>
             <FormField label="Largura mínima (cm)">
-              <input type="number" value={filters.minLargura} onChange={e => FF('minLargura', e.target.value)} />
+              <input type="number" min="0" max="10000" step="0.01" value={filters.minLargura} onChange={e => FFNumber('minLargura', e.target.value)} />
             </FormField>
             <FormField label="Comprimento mínimo (cm)">
-              <input type="number" value={filters.minComprimento} onChange={e => FF('minComprimento', e.target.value)} />
+              <input type="number" min="0" max="10000" step="0.01" value={filters.minComprimento} onChange={e => FFNumber('minComprimento', e.target.value)} />
             </FormField>
           </div>
           <div style={{ display:'flex', justifyContent:'flex-end', marginTop:8 }}>
@@ -160,7 +184,7 @@ export default function ChapasPage({ onUpdate, user }) {
                   <Eye size={11}/> Ver
                 </button>
                 {canEdit && <BtnIcon title="QR Code" onClick={() => setQrCodeItem(c)}><QrCode size={12}/></BtnIcon>}
-                {canEdit && c.status !== 'Inativa' && <BtnIcon title="Editar" onClick={() => { setForm({ ...c }); setModal('edit') }}><Edit2 size={12}/></BtnIcon>}
+                {canEdit && c.status !== 'Inativa' && <BtnIcon title="Editar" onClick={() => { setForm({ ...c }); setErro(''); setModal('edit') }}><Edit2 size={12}/></BtnIcon>}
                 {canEdit && c.status !== 'Inativa' && <BtnIcon title="Inativar" danger onClick={() => handleInativar(c)}><Ban size={12}/></BtnIcon>}
               </div>
             </div>
@@ -195,21 +219,25 @@ export default function ChapasPage({ onUpdate, user }) {
       {(modal === 'add' || modal === 'edit') && (
         <Modal title={modal === 'add' ? 'Nova Chapa' : 'Editar Chapa'} onClose={close}>
           {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
-          <FormField label="Nome da Chapa *"><input value={form.nome} onChange={e => F('nome', e.target.value)} /></FormField>
-          <FormField label="Foto do lote">
-            <label style={{ display:'inline-flex', gap:6, alignItems:'center', cursor:'pointer', border:'1px solid #e5e7eb', borderRadius:8, padding:'8px 12px', fontSize:12 }}>
-              <Camera size={14}/> Enviar foto<input type="file" accept="image/*" onChange={handleFoto} style={{ display:'none' }}/>
-            </label>
+          <FormField label="Nome da Chapa *"><input maxLength={LIMITS.nome} value={form.nome} onChange={e => F('nome', e.target.value)} /></FormField>
+          <FormField label="Foto do lote (JPG, PNG ou WEBP)">
+            <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+              <label style={{ display:'inline-flex', gap:6, alignItems:'center', cursor:'pointer', border:'1px solid #e5e7eb', borderRadius:8, padding:'8px 12px', fontSize:12 }}>
+                <Camera size={14}/> Enviar foto<input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFoto} style={{ display:'none' }}/>
+              </label>
+              {form.foto && <button type="button" onClick={() => F('foto', null)} title="Remover foto" style={{ border:'none', background:'transparent', color:'#dc2626', cursor:'pointer', display:'flex' }}><X size={16}/></button>}
+            </div>
+            <p style={{ fontSize:10, color:'#9ca3af', marginTop:4 }}>A imagem é validada, redimensionada para até 1280 px e comprimida para até 500 KB.</p>
           </FormField>
           <div className="form-grid-2">
             <FormField label="Tipo"><select value={form.tipo} onChange={e => F('tipo',e.target.value)}>{TIPOS_ROCHA.map(v => <option key={v}>{v}</option>)}</select></FormField>
             <FormField label="Cor"><input type="color" value={form.cor} onChange={e => F('cor',e.target.value)}/></FormField>
-            <FormField label="Largura (cm) *"><input type="number" value={form.largura} onChange={e => F('largura',e.target.value)}/></FormField>
-            <FormField label="Comprimento (cm) *"><input type="number" value={form.comprimento} onChange={e => F('comprimento',e.target.value)}/></FormField>
-            <FormField label="Espessura (cm)"><input type="number" value={form.espessura} onChange={e => F('espessura',e.target.value)}/></FormField>
-            <FormField label="Status"><select value={form.status} onChange={e => F('status',e.target.value)}>{STATUS_CHAPA.map(v => <option key={v}>{v}</option>)}</select></FormField>
+            <FormField label="Largura (cm) *"><input type="number" min="0.01" max="10000" step="0.01" value={form.largura} onChange={e => F('largura',e.target.value)}/></FormField>
+            <FormField label="Comprimento (cm) *"><input type="number" min="0.01" max="10000" step="0.01" value={form.comprimento} onChange={e => F('comprimento',e.target.value)}/></FormField>
+            <FormField label="Espessura (cm) *"><input type="number" min="0.01" max="100" step="0.01" value={form.espessura} onChange={e => F('espessura',e.target.value)}/></FormField>
+            <FormField label="Status"><input value={form.status || 'Disponível'} disabled/></FormField>
           </div>
-          <FormField label="Localização física"><input value={form.localizacao || ''} onChange={e => F('localizacao',e.target.value)} placeholder="Ex: Pátio A - Cavalete 03"/></FormField>
+          <FormField label="Localização física"><input maxLength={LIMITS.localizacao} value={form.localizacao || ''} onChange={e => F('localizacao',e.target.value)} placeholder="Ex: Pátio A - Cavalete 03"/></FormField>
           <div style={{ display:'flex', gap:8 }}>
             <BtnSecondary onClick={close}>Cancelar</BtnSecondary>
             <BtnPrimary onClick={modal === 'add' ? handleAdd : handleEdit} style={{ flex:1, justifyContent:'center' }}>
@@ -219,7 +247,7 @@ export default function ChapasPage({ onUpdate, user }) {
         </Modal>
       )}
 
-      {qrCodeItem && <QRCodeModal item={qrCodeItem} tipo="chapa" onClose={() => setQrCodeItem(null)}/>} 
+      {qrCodeItem && <QRCodeModal item={qrCodeItem} type="chapa" onClose={() => setQrCodeItem(null)}/>} 
     </div>
   )
 }
