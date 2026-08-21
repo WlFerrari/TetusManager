@@ -1,5 +1,8 @@
 import React from 'react'
-import { LayoutDashboard, Package, Layers, Scissors, BarChart3, Settings, LogOut, X } from 'lucide-react'
+import {
+  BarChart3, ChevronLeft, ChevronRight, Layers, LayoutDashboard,
+  LogOut, Package, Scissors, Settings, X,
+} from 'lucide-react'
 import { Avatar } from './UI.jsx'
 import { PERFIL_LABELS } from '../../models/index.js'
 import logo from '../../assets/logo.png'
@@ -13,7 +16,16 @@ const ALL_NAV = [
   { id:'configuracoes', label:'Configurações', icon:Settings, perm:'verConfiguracoes' },
 ]
 
-export default function Sidebar({ page, setPage, user, onLogout, open, onClose }) {
+export default function Sidebar({
+  page,
+  setPage,
+  user,
+  onLogout,
+  open,
+  onClose,
+  collapsed=false,
+  onToggleCollapsed,
+}) {
   const perms = user.permissoes || {}
   const nav = ALL_NAV.filter(item => perms[item.perm] !== false)
 
@@ -25,41 +37,72 @@ export default function Sidebar({ page, setPage, user, onLogout, open, onClose }
   return (
     <>
       <div className={`sidebar-overlay ${open ? 'show' : ''}`} onClick={onClose}/>
-      <aside className={`sidebar ${open ? 'open' : ''}`}>
-        <div style={{ padding:'16px 14px', borderBottom:'1px solid var(--border-color)', display:'flex', alignItems:'center', gap:10 }}>
-          <img src={logo} alt="Tetus Marmoraria" style={{ width:38, height:38, objectFit:'contain', flexShrink:0 }}/>
-          <div style={{ flex:1 }}>
-            <p style={{ color:'#fff', fontWeight:700, fontSize:13, lineHeight:1.2 }}>TetusManager</p>
-            <p style={{ color:'var(--text-secondary)', fontSize:10 }}>Sistema de Estoque</p>
-          </div>
-          <button onClick={onClose} style={{ background:'none', border:'none', color:'var(--text-secondary)', cursor:'pointer', display:'flex', padding:4 }} className="mobile-close-btn"><X size={18}/></button>
+      <aside className={`sidebar ${open ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
+        <div className="sidebar-brand">
+          <img src={logo} alt="Tetus Marmoraria" className="sidebar-logo"/>
+          {!collapsed && (
+            <div className="sidebar-brand-text">
+              <p className="sidebar-title">TetusManager</p>
+              <p className="sidebar-subtitle">Sistema de Estoque</p>
+            </div>
+          )}
+          <button onClick={onClose} className="mobile-close-btn sidebar-icon-button" title="Fechar menu">
+            <X size={18}/>
+          </button>
+          <button
+            type="button"
+            onClick={onToggleCollapsed}
+            className="desktop-collapse-btn sidebar-icon-button"
+            title={collapsed ? 'Expandir barra lateral' : 'Ocultar textos da barra lateral'}
+            aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
+          >
+            {collapsed ? <ChevronRight size={17}/> : <ChevronLeft size={17}/>}
+          </button>
         </div>
 
-        <nav style={{ flex:1, padding:'10px 8px', overflowY:'auto' }}>
+        <nav className="sidebar-nav">
           {nav.map(({ id, label, icon:Icon }) => (
-            <button key={id} onClick={() => handleNav(id)} style={{
-              width:'100%', display:'flex', alignItems:'center', gap:11,
-              padding:'10px 12px', borderRadius:9, border:'none', cursor:'pointer',
-              fontSize:13, fontWeight:page===id ? 600 : 400,
-              background:page===id ? '#2563eb' : 'transparent',
-              color:page===id ? '#fff' : 'var(--text-secondary)',
-              marginBottom:2, textAlign:'left', transition:'all .15s',
-            }}><Icon size={16}/>{label}</button>
+            <button
+              key={id}
+              onClick={() => handleNav(id)}
+              title={collapsed ? label : undefined}
+              aria-label={label}
+              className={`sidebar-nav-item ${page === id ? 'active' : ''}`}
+            >
+              <Icon size={17}/>
+              {!collapsed && <span>{label}</span>}
+            </button>
           ))}
         </nav>
 
-        <div style={{ padding:'10px 8px', borderTop:'1px solid var(--border-color)' }}>
-          <button onClick={() => handleNav('configuracoes')} style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'9px 10px', borderRadius:9, border:'none', cursor:'pointer', background:'transparent', marginBottom:4 }}>
-            {user.foto
-              ? <img src={user.foto} alt="Perfil" style={{ width:30, height:30, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
-              : <Avatar name={user.nome} size={30}/>
-            }
-            <div style={{ minWidth:0, textAlign:'left' }}>
-              <p style={{ color:'#e2e8f0', fontSize:12, fontWeight:500, overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{user.nome}</p>
-              <p style={{ color:'var(--text-secondary)', fontSize:11 }}>{PERFIL_LABELS[user.perfil] || user.perfil}</p>
-            </div>
+        <div className="sidebar-footer">
+          {perms.verConfiguracoes !== false && (
+            <button
+              onClick={() => handleNav('configuracoes')}
+              title={collapsed ? `${user.nome} — ${PERFIL_LABELS[user.perfil] || user.perfil}` : undefined}
+              className="sidebar-user-button"
+            >
+              {user.foto
+                ? <img src={user.foto} alt="Perfil" className="sidebar-avatar"/>
+                : <Avatar name={user.nome} size={30}/>
+              }
+              {!collapsed && (
+                <div className="sidebar-user-text">
+                  <p>{user.nome}</p>
+                  <span>{PERFIL_LABELS[user.perfil] || user.perfil}</span>
+                </div>
+              )}
+            </button>
+          )}
+          <button
+            onClick={onLogout}
+            title={collapsed ? 'Sair' : undefined}
+            aria-label="Sair"
+            className="sidebar-logout-button"
+          >
+            <LogOut size={16}/>
+            {!collapsed && <span>Sair</span>}
           </button>
-          <button onClick={onLogout} style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'9px 12px', borderRadius:9, border:'none', cursor:'pointer', fontSize:13, background:'transparent', color:'var(--text-secondary)' }}><LogOut size={15}/> Sair</button>
         </div>
       </aside>
     </>
