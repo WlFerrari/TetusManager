@@ -27,7 +27,7 @@ export function Modal({ title, onClose, children }) {
       <div className="modal-box">
         <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'15px 20px', borderBottom:'1px solid var(--border-color)' }}>
           <span style={{ fontWeight:700, fontSize:15, color:'var(--text-primary)' }}>{title}</span>
-          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-secondary)', display:'flex', padding:4 }}><X size={16}/></button>
+          <button onClick={onClose} style={{ background:'none', border:'none', cursor:'pointer', color:'var(--text-secondary)', display:'flex', padding:4 }} aria-label="Fechar"><X size={16}/></button>
         </div>
         <div style={{ padding:'18px 20px' }}>{children}</div>
       </div>
@@ -51,8 +51,14 @@ export function ConfirmDelete({ message, onConfirm, onCancel }) {
   )
 }
 
-export function FormField({ label, children }) {
-  return <div className="form-field"><label>{label}</label>{children}</div>
+export function FormField({ label, children, error, hint }) {
+  return (
+    <div className={`form-field ${error ? 'has-error' : ''}`}>
+      <label>{label}</label>
+      {children}
+      {error ? <p className="field-error" role="alert">{error}</p> : hint ? <p className="field-hint">{hint}</p> : null}
+    </div>
+  )
 }
 
 export function Toast({ message, type }) {
