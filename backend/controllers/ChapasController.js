@@ -21,7 +21,7 @@ class ChapasController {
       const invalid = validateFilters(req.query)
       if (invalid) return res.status(400).json({ ok:false, msg:invalid })
       const data = await ChapaRepo.findAll(req.query || '')
-      res.json({ ok: true, data })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 
@@ -30,8 +30,8 @@ class ChapasController {
   async show(req, res, next) {
     try {
       const data = await ChapaRepo.findById(req.params.id)
-      if (!data) return res.status(404).json({ ok: false, msg: 'Chapa não encontrada.' })
-      res.json({ ok: true, data })
+      if (!data) return res.status(404).json({ ok:false, msg:'Chapa não encontrada.' })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 
@@ -40,7 +40,7 @@ class ChapasController {
   async stats(req, res, next) {
     try {
       const data = await ChapaRepo.stats()
-      res.json({ ok: true, data })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 
@@ -51,7 +51,7 @@ class ChapasController {
       if (invalid) return res.status(400).json({ ok:false, msg:invalid })
 
       const data = await ChapaRepo.insert({ ...payload, criadoPor:req.user?.id || null })
-      res.status(201).json({ ok: true, data, msg: `Chapa "${data.nome}" cadastrada!` })
+      res.status(201).json({ ok:true, data, msg:`Chapa "${data.nome}" cadastrada!` })
     } catch (e) { next(e) }
   }
 
@@ -62,16 +62,15 @@ class ChapasController {
       const atual = await ChapaRepo.findById(req.params.id)
       if (!atual) return res.status(404).json({ ok:false, msg:'Chapa não encontrada.' })
       if (atual.status === 'Inativa') {
-        return res.status(400).json({ ok:false, msg:'Chapas inativas não podem ser editadas.' })
+        return res.status(400).json({ ok:false, msg:'Reative a chapa antes de editar seus dados.' })
       }
 
-      // Status é controlado pelos fluxos de corte/inativação, não pelo formulário de edição.
       const payload = { ...atual, ...req.body, status:atual.status }
       const invalid = validateChapa(payload)
       if (invalid) return res.status(400).json({ ok:false, msg:invalid })
 
       const data = await ChapaRepo.update(req.params.id, payload)
-      res.json({ ok: true, data, msg: `Chapa "${data.nome}" atualizada!` })
+      res.json({ ok:true, data, msg:`Chapa "${data.nome}" atualizada!` })
     } catch (e) { next(e) }
   }
 
@@ -85,7 +84,19 @@ class ChapasController {
         return res.json({ ok:true, data:atual, msg:`Chapa "${atual.nome}" já está inativa.` })
       }
       const data = await ChapaRepo.inativar(req.params.id)
-      res.json({ ok: true, data, msg: `Chapa "${data.nome}" inativada. Histórico preservado.` })
+      res.json({ ok:true, data, msg:`Chapa "${data.nome}" inativada. Histórico preservado.` })
+    } catch (e) { next(e) }
+  }
+
+  async reactivate(req, res, next) {
+    try {
+      const atual = await ChapaRepo.findById(req.params.id)
+      if (!atual) return res.status(404).json({ ok:false, msg:'Chapa não encontrada.' })
+      if (atual.status !== 'Inativa') {
+        return res.status(400).json({ ok:false, msg:'Somente chapas inativas podem ser reativadas.' })
+      }
+      const data = await ChapaRepo.setStatus(req.params.id, 'Disponível')
+      res.json({ ok:true, data, msg:`Chapa "${data.nome}" reativada e disponível novamente.` })
     } catch (e) { next(e) }
   }
 
@@ -95,7 +106,7 @@ class ChapasController {
   async listarChapasDisponiveis(req, res, next) {
     try {
       const data = await ChapaRepo.listarDisponiveis()
-      res.json({ ok: true, data })
+      res.json({ ok:true, data })
     } catch (e) { next(e) }
   }
 }
