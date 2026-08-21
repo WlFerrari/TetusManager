@@ -25,6 +25,23 @@ ALTER TABLE retalhos
   ADD CONSTRAINT retalhos_origem_tipo_check
   CHECK (origem_tipo IN ('AUTOMATICA','MANUAL'));
 
+-- Garante coerência da origem também em bancos que já existiam antes desta versão.
+-- NOT VALID preserva bancos antigos que eventualmente possuam registros legados
+-- inconsistentes, mas novos INSERTs e UPDATEs já passam a respeitar a regra.
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'retalho_origem_coerente'
+  ) THEN
+    ALTER TABLE retalhos
+      ADD CONSTRAINT retalho_origem_coerente
+      CHECK (
+        (origem_tipo = 'MANUAL' AND origem IS NULL)
+        OR (origem_tipo = 'AUTOMATICA' AND origem IS NOT NULL)
+      ) NOT VALID;
+  END IF;
+END $$;
+
 -- Corte pode existir sem retalho (consumo integral da chapa)
 ALTER TABLE cortes ALTER COLUMN retalho_id DROP NOT NULL;
 
