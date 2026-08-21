@@ -11,6 +11,7 @@ router.patch('/:id/reservar', authMiddleware, requirePerm('editarEstoque'), (req
 router.patch('/:id/liberar', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.release(req, res, next))
 router.patch('/:id/consumir', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.consume(req, res, next))
 router.patch('/:id/descartar', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.discard(req, res, next))
+router.patch('/:id/reativar', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.reactivate(req, res, next))
 router.delete('/:id', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => RetalhosController.delete(req, res, next))
 
 module.exports = router
