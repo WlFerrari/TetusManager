@@ -87,6 +87,11 @@ export const retalhoRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkRetalho(res.data)
   },
+  reativar:async id => {
+    const res = await RetalhoService.reativar(id)
+    if (!res.ok) throw new Error(res.msg)
+    return mkRetalho(res.data)
+  },
   delete:async id => {
     const res = await RetalhoService.marcarDescartado(id)
     if (!res.ok) throw new Error(res.msg)
