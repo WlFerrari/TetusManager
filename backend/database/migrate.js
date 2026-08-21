@@ -14,6 +14,7 @@ async function migrate() {
   const files = [
     'migrations.sql',
     'alinhamento_v1_2.sql',
+    'validacoes_integridade_v1_3.sql',
   ]
 
   for (const file of files) {
