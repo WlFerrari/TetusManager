@@ -6,14 +6,12 @@
 
 import { chapaRepo, retalhoRepo, userRepo, empresaRepo, corteRepo } from '../repositories/index.js'
 
-// O QR Code guarda somente um identificador estável. Os demais dados são consultados
-// no sistema, evitando etiquetas obsoletas após uma edição da peça.
-const withChapaQrCode = (payload = {}) => payload.id
-  ? { ...payload, qrCode: `TETUS|CHAPA|${payload.id}` }
+const withChapaQrCode = (payload={}) => payload.id
+  ? { ...payload, qrCode:`TETUS|CHAPA|${payload.id}` }
   : payload
 
-const withRetalhoQrCode = (payload = {}) => payload.id
-  ? { ...payload, qrCode: `TETUS|RETALHO|${payload.id}` }
+const withRetalhoQrCode = (payload={}) => payload.id
+  ? { ...payload, qrCode:`TETUS|RETALHO|${payload.id}` }
   : payload
 
 class ChapaController {
@@ -56,18 +54,26 @@ class ChapaController {
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
+  async reativar(id) {
+    try {
+      const e = await this.r.reactivate(id)
+      return {ok:1,data:e,msg:`Chapa "${e.nome}" reativada e disponível novamente.`}
+    } catch(e) { return {ok:0,msg:e.message} }
+  }
+
   async listarChapas(f='') { return this.listar(f) }
   async gravarChapa(d) { return this.criar(d) }
-  async atualizarChapa(id, d) { return this.atualizar(id, d) }
+  async atualizarChapa(id,d) { return this.atualizar(id,d) }
   async excluirChapa(id) { return this.excluir(id) }
+  async reativarChapa(id) { return this.reativar(id) }
   async consultarChapa(id) { return this.buscar(id) }
 
   async listarChapasDisponiveis() {
     try { return { ok:1, data:await this.r.listarDisponiveis() } }
-    catch (err) { return { ok:0, data:[], msg:err.message } }
+    catch(err) { return { ok:0, data:[], msg:err.message } }
   }
 
-  calcularCorte(cid, cc, lc, nome = '', chapa = null) {
+  calcularCorte(cid, cc, lc, nome='', chapa=null) {
     if (!cid || !(+cc > 0) || !(+lc > 0)) {
       return { ok:0, msg:'Chapa, comprimento e largura são obrigatórios.' }
     }
@@ -82,11 +88,9 @@ class ChapaController {
       return { ok:0, msg:'O corte é maior do que a chapa selecionada. Ajuste as medidas.' }
     }
 
-    // Modelo geométrico retangular simplificado (corte de guilhotina):
-    // calcula as duas sobras retangulares possíveis e preserva a maior.
     const opcoes = [
-      { comprimento: comprimentoChapa - cc, largura: larguraChapa },
-      { comprimento: comprimentoChapa, largura: larguraChapa - lc },
+      { comprimento:comprimentoChapa - cc, largura:larguraChapa },
+      { comprimento:comprimentoChapa, largura:larguraChapa - lc },
     ].filter(r => r.comprimento > 0 && r.largura > 0)
 
     const areaConsumida = parseFloat(((cc * lc) / 10000).toFixed(4))
@@ -104,17 +108,17 @@ class ChapaController {
     const sobra = opcoes[0]
     const area = parseFloat(((sobra.comprimento * sobra.largura) / 10000).toFixed(4))
     const retalho = {
-      origem: String(cid),
-      origemTipo: 'AUTOMATICA',
-      comprimento: sobra.comprimento,
-      largura: sobra.largura,
+      origem:String(cid),
+      origemTipo:'AUTOMATICA',
+      comprimento:sobra.comprimento,
+      largura:sobra.largura,
       area,
-      status: 'Disponível',
-      nome: nome?.trim() ? nome : `Sobra ${chapa.nome}`,
-      tipo: chapa.tipo,
-      cor: chapa.cor,
-      espessura: chapa.espessura || 2,
-      localizacao: chapa.localizacao || '',
+      status:'Disponível',
+      nome:nome?.trim() ? nome : `Sobra ${chapa.nome}`,
+      tipo:chapa.tipo,
+      cor:chapa.cor,
+      espessura:chapa.espessura || 2,
+      localizacao:chapa.localizacao || '',
     }
 
     return { ok:1, retalho, semRetalho:false, areaConsumida, msg:`Retalho calculado: ${area.toFixed(4)} m²` }
@@ -135,11 +139,11 @@ class RetalhoController {
     try {
       const payload = {
         ...d,
-        area: parseFloat(((+d.comprimento * +d.largura) / 10000).toFixed(4)),
-        origemTipo: d.origem ? 'AUTOMATICA' : 'MANUAL',
-        tipo: d.tipo || 'Granito',
-        cor: d.cor || '#6b7280',
-        espessura: +d.espessura || 2,
+        area:parseFloat(((+d.comprimento * +d.largura) / 10000).toFixed(4)),
+        origemTipo:d.origem ? 'AUTOMATICA' : 'MANUAL',
+        tipo:d.tipo || 'Granito',
+        cor:d.cor || '#6b7280',
+        espessura:+d.espessura || 2,
       }
       const e = await this.r.insert(payload)
       return {ok:1,data:e,msg:`Retalho "${e.id}" cadastrado!`}
@@ -185,7 +189,7 @@ class RetalhoController {
   async marcarConsumido(id) {
     try {
       const e = await this.r.marcarConsumido(id)
-      return {ok:1,data:e,msg:'Marcado como consumido!'}
+      return {ok:1,data:e,msg:'Retalho marcado como utilizado!'}
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
@@ -196,7 +200,6 @@ class RetalhoController {
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
-  // Compatibilidade com telas antigas: excluir significa descartar logicamente.
   async excluir(id) { return this.marcarDescartado(id) }
 
   async stats() {
@@ -243,7 +246,7 @@ class UserController {
   async toggleStatus(id) {
     try {
       const e = await this.r.toggleStatus(id)
-      return {ok:1,data:e,msg:`Usuário ${e.status==='Ativo'?'ativado':'inativado'}!`}
+      return {ok:1,data:e,msg:`Usuário ${e.status === 'Ativo' ? 'ativado' : 'inativado'}!`}
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
@@ -254,9 +257,9 @@ class UserController {
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
-  async atualizarPermissoes(id, permissoes) {
+  async atualizarPermissoes(id,permissoes) {
     try {
-      const e = await this.r.atualizarPermissoes(id, permissoes)
+      const e = await this.r.atualizarPermissoes(id,permissoes)
       return {ok:1,data:e,msg:'Permissões atualizadas!'}
     } catch(e) { return {ok:0,msg:e.message} }
   }
@@ -268,19 +271,19 @@ class UserController {
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
-  async atualizarPerfil(id, d) {
+  async atualizarPerfil(id,d) {
     if (!d.nome?.trim()) return {ok:0,msg:'Nome é obrigatório.'}
     try {
-      const e = await this.r.update(id, { nome:d.nome, telefone:d.telefone||'', cargo:d.cargo||'', foto:d.foto||null })
+      const e = await this.r.update(id, { nome:d.nome, telefone:d.telefone || '', cargo:d.cargo || '', foto:d.foto || null })
       return {ok:1,data:e,msg:'Perfil atualizado com sucesso!'}
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
-  async alterarSenha(senhaAtual, novaSenha) {
+  async alterarSenha(senhaAtual,novaSenha) {
     if (!senhaAtual || !novaSenha) return {ok:0,msg:'Senhas são obrigatórias.'}
     if (novaSenha.length < 6) return {ok:0,msg:'Nova senha: mínimo 6 caracteres.'}
     try {
-      const r = await this.r.alterarSenha(senhaAtual, novaSenha)
+      const r = await this.r.alterarSenha(senhaAtual,novaSenha)
       return {ok:r.ok ? 1 : 0,msg:r.msg}
     } catch(e) { return {ok:0,msg:e.message} }
   }
@@ -304,13 +307,13 @@ class CorteController {
   constructor(r) { this.r = r }
 
   async registrarCorte(payload) {
-    if (!payload?.chapaId) return { ok:0, msg:'Chapa é obrigatória.' }
-    if (!payload?.osNumero?.trim()) return { ok:0, msg:'Número da OS é obrigatório.' }
+    if (!payload?.chapaId) return {ok:0,msg:'Chapa é obrigatória.'}
+    if (!payload?.osNumero?.trim()) return {ok:0,msg:'Número da OS é obrigatório.'}
     if (!(+payload.comprimentoConsumido > 0 && +payload.larguraConsumida > 0)) {
-      return { ok:0, msg:'Dimensões consumidas inválidas.' }
+      return {ok:0,msg:'Dimensões consumidas inválidas.'}
     }
     try {
-      const res = await this.r.registrar({ ...payload, retalhos: payload.retalhos || [] })
+      const res = await this.r.registrar({ ...payload, retalhos:payload.retalhos || [] })
       return {
         ok:1,
         data:res.data,
@@ -321,7 +324,7 @@ class CorteController {
     } catch(e) { return {ok:0,msg:e.message} }
   }
 
-  async listar(filters = {}) {
+  async listar(filters={}) {
     try { return {ok:1,data:await this.r.listar(filters)} }
     catch(e) { return {ok:0,data:[],msg:e.message} }
   }
