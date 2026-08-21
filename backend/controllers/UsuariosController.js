@@ -68,6 +68,10 @@ class UsuariosController {
         return res.status(400).json({ ok:false, msg:'E-mail já cadastrado.' })
       }
 
+      payload.permissoes = payload.perfil !== atual.perfil
+        ? { ...(PERMISSOES_PADRAO[payload.perfil] || PERMISSOES_PADRAO.Vendedor) }
+        : { ...(atual.permissoes || {}) }
+
       const data = await UserRepo.updateFull(req.params.id, payload)
       res.json({ ok:true, data, msg:`Usuário "${data.nome}" atualizado!` })
     } catch (e) { next(e) }
