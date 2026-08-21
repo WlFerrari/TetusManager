@@ -43,13 +43,16 @@ rectangle TetusManager {
 ```plantuml
 @startuml
 [*] --> Disponivel
-Disponivel --> EmUso : registrarCorte()\n[há sobra reutilizável]
-Disponivel --> Inativa : registrarCorte()\n[sem sobra]
+Disponivel --> EmUso : iniciarProcessamento()
+Disponivel --> Inativa : registrarCorte()
 Disponivel --> Inativa : inativarChapa()
+EmUso --> Inativa : concluirCorte()
 EmUso --> Inativa : inativarChapa()
-Inativa --> Disponivel : reativarChapa()\n[quando permitido]
+Inativa --> Disponivel : reativarChapa()\n[sem corte registrado]
 @enduml
 ```
+
+> Ao concluir o UC04, a chapa de origem termina em `Inativa`. Quando existe sobra reutilizável, apenas o novo retalho representa a área física restante no estoque.
 
 ## 3. Diagrama de estados — Retalho
 
@@ -161,7 +164,6 @@ ChapasController --> TelaChapasUI : chapaAtualizada
 actor Estoquista
 boundary TelaCorteUI
 control CortesController
-control RetalhosController
 entity ChapaRepository
 entity CorteRepository
 entity RetalhoRepository
@@ -181,7 +183,7 @@ alt há sobra reutilizável
   CortesController -> RetalhoRepository : insert(retalho AUTOMATICA)
   RetalhoRepository --> CortesController : retalhoGravado
   CortesController -> CorteRepository : insert(corte, retalhoId)
-  CortesController -> ChapaRepository : setStatus(Em uso)
+  CortesController -> ChapaRepository : setStatus(Inativa)
   CortesController --> TelaCorteUI : corte + retalho + QR
 else sem sobra reutilizável
   CortesController -> CorteRepository : insert(corte, retalhoId=null)
