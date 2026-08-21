@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Ban, Camera, Edit2, Eye, Plus, QrCode, X } from 'lucide-react'
+import { Ban, Camera, Edit2, Eye, Plus, QrCode, RefreshCw, X } from 'lucide-react'
 import { chapaCtrl, corteCtrl } from '../../controllers/index.js'
 import { STATUS_CHAPA, TIPOS_ROCHA } from '../../models/index.js'
 import {
@@ -123,6 +123,13 @@ export default function ChapasPage({ onUpdate, user }) {
     if (r.ok) await carregarChapas()
   }
 
+  async function handleReativar(chapa) {
+    if (!window.confirm(`Reativar a chapa "${chapa.nome}" e torná-la disponível novamente?`)) return
+    const r = await chapaCtrl.reativarChapa(chapa.id)
+    onUpdate(r.msg, r.ok ? 'ok' : 'err')
+    if (r.ok) await carregarChapas()
+  }
+
   const activeFilters = Object.values(filters).filter(v => String(v ?? '').trim()).length
 
   return (
@@ -150,28 +157,28 @@ export default function ChapasPage({ onUpdate, user }) {
         <div className="card" style={{ padding:12, marginBottom:12 }}>
           <div className="form-grid-2">
             <FormField label="Tipo">
-              <select value={filters.tipo} onChange={e => FF('tipo', e.target.value)}>
+              <select value={filters.tipo} onChange={e => FF('tipo',e.target.value)}>
                 <option value="">Todos</option>
                 {TIPOS_ROCHA.map(v => <option key={v}>{v}</option>)}
               </select>
             </FormField>
             <FormField label="Status">
-              <select value={filters.status} onChange={e => FF('status', e.target.value)}>
+              <select value={filters.status} onChange={e => FF('status',e.target.value)}>
                 <option value="">Todos</option>
                 {STATUS_CHAPA.map(v => <option key={v}>{v}</option>)}
               </select>
             </FormField>
             <FormField label="Localização">
-              <input maxLength={LIMITS.localizacao} value={filters.localizacao} onChange={e => FF('localizacao', e.target.value)} placeholder="Ex: Pátio A" />
+              <input maxLength={LIMITS.localizacao} value={filters.localizacao} onChange={e => FF('localizacao',e.target.value)} placeholder="Ex: Pátio A" />
             </FormField>
             <FormField label="Espessura (cm)">
-              <input type="number" min="0" max="100" step="0.01" value={filters.espessura} onChange={e => FFNumber('espessura', e.target.value)} />
+              <input type="number" min="0" max="100" step="0.01" value={filters.espessura} onChange={e => FFNumber('espessura',e.target.value)} />
             </FormField>
             <FormField label="Largura mínima (cm)">
-              <input type="number" min="0" max="10000" step="0.01" value={filters.minLargura} onChange={e => FFNumber('minLargura', e.target.value)} />
+              <input type="number" min="0" max="10000" step="0.01" value={filters.minLargura} onChange={e => FFNumber('minLargura',e.target.value)} />
             </FormField>
             <FormField label="Comprimento mínimo (cm)">
-              <input type="number" min="0" max="10000" step="0.01" value={filters.minComprimento} onChange={e => FFNumber('minComprimento', e.target.value)} />
+              <input type="number" min="0" max="10000" step="0.01" value={filters.minComprimento} onChange={e => FFNumber('minComprimento',e.target.value)} />
             </FormField>
           </div>
           <div style={{ display:'flex', justifyContent:'flex-end', marginTop:8 }}>
@@ -205,6 +212,7 @@ export default function ChapasPage({ onUpdate, user }) {
                 {canEdit && <BtnIcon title="QR Code" onClick={() => setQrCodeItem(c)}><QrCode size={12}/></BtnIcon>}
                 {canEdit && c.status !== 'Inativa' && <BtnIcon title="Editar" onClick={() => { setForm({ ...c }); setErro(''); setFieldErrors({}); setModal('edit') }}><Edit2 size={12}/></BtnIcon>}
                 {canEdit && c.status !== 'Inativa' && <BtnIcon title="Inativar" danger onClick={() => handleInativar(c)}><Ban size={12}/></BtnIcon>}
+                {canEdit && c.status === 'Inativa' && <BtnIcon title="Reativar" onClick={() => handleReativar(c)}><RefreshCw size={12}/></BtnIcon>}
               </div>
             </div>
           </div>
@@ -239,14 +247,14 @@ export default function ChapasPage({ onUpdate, user }) {
         <Modal title={modal === 'add' ? 'Nova Chapa' : 'Editar Chapa'} onClose={close}>
           {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
           <FormField label="Nome da Chapa *" error={fieldErrors.nome}>
-            <input maxLength={LIMITS.nome} value={form.nome} onChange={e => F('nome', e.target.value)} onBlur={() => validateField('nome')} />
+            <input maxLength={LIMITS.nome} value={form.nome} onChange={e => F('nome',e.target.value)} onBlur={() => validateField('nome')} />
           </FormField>
           <FormField label="Foto do lote (JPG, PNG ou WEBP)" error={fieldErrors.foto} hint="A imagem é validada, redimensionada para até 1280 px e comprimida para até 500 KB.">
             <div style={{ display:'flex', gap:8, alignItems:'center' }}>
               <label style={{ display:'inline-flex', gap:6, alignItems:'center', cursor:'pointer', border:'1px solid #e5e7eb', borderRadius:8, padding:'8px 12px', fontSize:12 }}>
                 <Camera size={14}/> Enviar foto<input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFoto} style={{ display:'none' }}/>
               </label>
-              {form.foto && <button type="button" onClick={() => F('foto', null)} title="Remover foto" style={{ border:'none', background:'transparent', color:'#dc2626', cursor:'pointer', display:'flex' }}><X size={16}/></button>}
+              {form.foto && <button type="button" onClick={() => F('foto',null)} title="Remover foto" style={{ border:'none', background:'transparent', color:'#dc2626', cursor:'pointer', display:'flex' }}><X size={16}/></button>}
             </div>
           </FormField>
           <div className="form-grid-2">
