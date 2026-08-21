@@ -9,12 +9,12 @@ const BASE_URL = rawBaseUrl.endsWith('/api')
   : `${rawBaseUrl.replace(/\/$/, '')}/api`
 
 export const tokenStorage = {
-  get: () => localStorage.getItem('tetus_token'),
-  set: (t) => localStorage.setItem('tetus_token', t),
-  remove: () => localStorage.removeItem('tetus_token'),
+  get:() => localStorage.getItem('tetus_token'),
+  set:t => localStorage.setItem('tetus_token', t),
+  remove:() => localStorage.removeItem('tetus_token'),
 }
 
-async function apiFetch(path, options = {}) {
+async function apiFetch(path, options={}) {
   const token = tokenStorage.get()
   const headers = {
     'Content-Type':'application/json',
@@ -36,8 +36,6 @@ async function apiFetch(path, options = {}) {
     json = { ok:false, msg:`O servidor retornou uma resposta inválida (${res.status}).` }
   }
 
-  // 401 no login significa credencial incorreta e deve ser exibido normalmente.
-  // Só encerramos a sessão quando já existia um token autenticado.
   if (res.status === 401 && token && path !== '/auth/login') {
     tokenStorage.remove()
     window.location.reload()
@@ -82,6 +80,7 @@ export const ChapaService = {
   stats:() => get('/chapas/stats'),
   criar:data => post('/chapas', data),
   atualizar:(id,data) => put(`/chapas/${id}`, data),
+  reativar:id => patch(`/chapas/${id}/reativar`, {}),
   excluir:id => del(`/chapas/${id}`),
 }
 
