@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { CheckCircle, QrCode, Scissors, X } from 'lucide-react'
 import { chapaCtrl, corteCtrl } from '../../controllers/index.js'
 import { FormField, BtnPrimary } from '../components/UI.jsx'
-import { LIMITS, validateCorte } from '../../utils/validation.js'
+import { LIMITS, corteFieldErrors } from '../../utils/validation.js'
 
 export default function CortePage({ onUpdate }) {
   const [form, setForm] = useState({ osNumero:'', chapaId:'', cc:'', lc:'', obs:'' })
@@ -10,6 +10,7 @@ export default function CortePage({ onUpdate }) {
   const [chapas, setChapas] = useState([])
   const [loading, setLoading] = useState(false)
   const [erro, setErro] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
 
   useEffect(() => { carregarChapas() }, [])
 
@@ -23,6 +24,7 @@ export default function CortePage({ onUpdate }) {
 
   const F = (k,v) => {
     setErro('')
+    setFieldErrors(errors => ({ ...errors, [k]:null }))
     setForm(f => ({ ...f, [k]:v }))
   }
   const chapa = chapas.find(c => c.id === form.chapaId)
@@ -35,9 +37,18 @@ export default function CortePage({ onUpdate }) {
     ? ((+form.cc * +form.lc) / (chapa.comprimento * chapa.largura) * 100).toFixed(0)
     : 0
 
+  function validateField(key) {
+    const errors = corteFieldErrors(form, chapa)
+    setFieldErrors(current => ({ ...current, [key]:errors[key] || null }))
+  }
+
   async function handleSalvar() {
-    const invalid = validateCorte(form, chapa)
-    if (invalid) return setErro(invalid)
+    const errors = corteFieldErrors(form, chapa)
+    setFieldErrors(errors)
+    if (Object.keys(errors).length) {
+      setErro('Revise os campos destacados antes de registrar o corte.')
+      return
+    }
     if (!calc?.ok) return setErro(calc?.msg || 'Não foi possível calcular o corte.')
 
     const r = await corteCtrl.registrarCorte({
@@ -53,6 +64,7 @@ export default function CortePage({ onUpdate }) {
       const retalho = Array.isArray(r.data) && r.data.length ? r.data[0] : null
       setDone({ retalho, semRetalho:!!r.semRetalho })
       setForm({ osNumero:'', chapaId:'', cc:'', lc:'', obs:'' })
+      setFieldErrors({})
       setErro('')
       onUpdate(r.msg, 'ok')
       await carregarChapas()
@@ -62,7 +74,7 @@ export default function CortePage({ onUpdate }) {
     }
   }
 
-  const canSave = !!calc?.ok && !validateCorte(form, chapa)
+  const canSave = !!calc?.ok && Object.keys(corteFieldErrors(form, chapa)).length === 0
 
   return (
     <div>
@@ -87,7 +99,7 @@ export default function CortePage({ onUpdate }) {
               </p>
             )}
           </div>
-          <button onClick={() => setDone(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'#16a34a', display:'flex' }}><X size={16}/></button>
+          <button onClick={() => setDone(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'#16a34a', display:'flex' }} aria-label="Fechar aviso"><X size={16}/></button>
         </div>
       )}
 
@@ -97,12 +109,12 @@ export default function CortePage({ onUpdate }) {
 
           {erro && <p style={{ fontSize:12, color:'#dc2626', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:8, padding:'8px 10px', marginBottom:10 }}>{erro}</p>}
 
-          <FormField label="Número da OS *">
-            <input maxLength={LIMITS.osNumero} value={form.osNumero} onChange={e => F('osNumero', e.target.value)} placeholder="OS-000123" />
+          <FormField label="Número da OS *" error={fieldErrors.osNumero}>
+            <input maxLength={LIMITS.osNumero} value={form.osNumero} onChange={e => F('osNumero', e.target.value)} onBlur={() => validateField('osNumero')} placeholder="OS-000123" />
           </FormField>
 
-          <FormField label="Chapa de Origem *">
-            <select value={form.chapaId} onChange={e => F('chapaId', e.target.value)} disabled={loading}>
+          <FormField label="Chapa de Origem *" error={fieldErrors.chapaId}>
+            <select value={form.chapaId} onChange={e => F('chapaId', e.target.value)} onBlur={() => validateField('chapaId')} disabled={loading}>
               <option value="">{loading ? 'Carregando...' : 'Selecione uma chapa...'}</option>
               {chapas.map(c => (
                 <option key={c.id} value={c.id}>
@@ -113,17 +125,16 @@ export default function CortePage({ onUpdate }) {
           </FormField>
 
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
-            <FormField label="Comprimento Consumido (cm) *">
-              <input type="number" min="0.01" max={chapa?.comprimento || 10000} step="0.01" value={form.cc} onChange={e => F('cc', e.target.value)} placeholder="0" />
+            <FormField label="Comprimento Consumido (cm) *" error={fieldErrors.cc}>
+              <input type="number" min="0.01" max={chapa?.comprimento || 10000} step="0.01" value={form.cc} onChange={e => F('cc', e.target.value)} onBlur={() => validateField('cc')} placeholder="0" />
             </FormField>
-            <FormField label="Largura Consumida (cm) *">
-              <input type="number" min="0.01" max={chapa?.largura || 10000} step="0.01" value={form.lc} onChange={e => F('lc', e.target.value)} placeholder="0" />
+            <FormField label="Largura Consumida (cm) *" error={fieldErrors.lc}>
+              <input type="number" min="0.01" max={chapa?.largura || 10000} step="0.01" value={form.lc} onChange={e => F('lc', e.target.value)} onBlur={() => validateField('lc')} placeholder="0" />
             </FormField>
           </div>
 
-          <FormField label="Observações / ID do Projeto">
-            <textarea value={form.obs} maxLength={LIMITS.observacao} onChange={e => F('obs', e.target.value)} placeholder="ID do projeto ou observações adicionais..." style={{ height:72, resize:'none' }}/>
-            <p style={{ fontSize:10, color:'#9ca3af', textAlign:'right' }}>{form.obs.length}/{LIMITS.observacao}</p>
+          <FormField label="Observações / ID do Projeto" error={fieldErrors.obs} hint={`${form.obs.length}/${LIMITS.observacao} caracteres`}>
+            <textarea value={form.obs} maxLength={LIMITS.observacao} onChange={e => F('obs', e.target.value)} onBlur={() => validateField('obs')} placeholder="ID do projeto ou observações adicionais..." style={{ height:72, resize:'none' }}/>
           </FormField>
 
           {calc && !calc.ok && <p style={{ fontSize:12, color:'#dc2626', marginBottom:10 }}>{calc.msg}</p>}
