@@ -8,16 +8,16 @@ const bcrypt = require('bcryptjs')
 function toModel(row) {
   if (!row) return null
   return {
-    id: row.id,
-    nome: row.nome,
-    email: row.email,
-    perfil: row.perfil,
-    status: row.status,
-    telefone: row.telefone || '',
-    cargo: row.cargo || '',
-    foto: row.foto || null,
-    permissoes: row.permissoes || {},
-    criadoEm: new Date(row.criado_em).toLocaleDateString('pt-BR'),
+    id:row.id,
+    nome:row.nome,
+    email:row.email,
+    perfil:row.perfil,
+    status:row.status,
+    telefone:row.telefone || '',
+    cargo:row.cargo || '',
+    foto:row.foto || null,
+    permissoes:row.permissoes || {},
+    criadoEm:new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
 }
 
@@ -83,10 +83,13 @@ const UserRepository = {
   async updateFull(id, data) {
     const { rows } = await query(`
       UPDATE usuarios
-      SET nome=$1, email=$2, perfil=$3, status=$4, telefone=$5, cargo=$6
-      WHERE id=$7
+      SET nome=$1, email=$2, perfil=$3, status=$4, telefone=$5, cargo=$6, permissoes=$7::jsonb
+      WHERE id=$8
       RETURNING *
-    `, [data.nome, data.email.toLowerCase(), data.perfil, data.status, data.telefone || '', data.cargo || '', id])
+    `, [
+      data.nome, data.email.toLowerCase(), data.perfil, data.status,
+      data.telefone || '', data.cargo || '', JSON.stringify(data.permissoes || {}), id,
+    ])
     if (!rows[0]) throw new Error('Usuário não encontrado')
     return toModel(rows[0])
   },
@@ -127,7 +130,6 @@ const UserRepository = {
     await query('UPDATE usuarios SET senha_hash=$1 WHERE id=$2', [hash, id])
   },
 
-  // Compatibilidade: exclusão administrativa passa a ser inativação lógica.
   async delete(id) { return this.inativar(id) },
 }
 
