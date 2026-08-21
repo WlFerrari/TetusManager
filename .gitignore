@@ -4,6 +4,9 @@ node_modules/
 # Env
 .env
 .env.*
+!.env.example
+!backend/.env.example
+!frontend/.env.example
 
 # Logs
 npm-debug.log*
@@ -26,4 +29,3 @@ backend/build/
 # OS
 .DS_Store
 Thumbs.db
-
