@@ -10,9 +10,24 @@ const routes  = require('./routes/index')
 
 const app  = express()
 const PORT = process.env.PORT || 3001
+const isProduction = process.env.NODE_ENV === 'production'
+
+if (!process.env.JWT_SECRET) {
+  if (isProduction) {
+    console.error('JWT_SECRET não configurado. Defina a variável antes de iniciar em produção.')
+    process.exit(1)
+  }
+
+  process.env.JWT_SECRET = 'tetusmanager-local-dev-secret-change-me'
+  console.warn('JWT_SECRET não configurado: usando segredo local de desenvolvimento.')
+}
+
+if (!process.env.DATABASE_URL && !process.env.DB_PASSWORD) {
+  console.warn('DB_PASSWORD não configurado. Se o PostgreSQL exigir senha, crie backend/.env a partir de backend/.env.example.')
+}
 
 function normalizeOrigin(value) {
-  if (!value) return 'http://localhost:3000'
+  if (!value) return 'http://localhost:5173'
 
   try {
     return new URL(value).origin
@@ -28,7 +43,7 @@ app.use(cors({
   origin:      frontendOrigin,
   credentials: true,
 }))
-app.use(express.json({ limit: '10mb' }))   // 10mb para suportar fotos base64
+app.use(express.json({ limit: '10mb' }))
 app.use(express.urlencoded({ extended: true }))
 
 // ── Rotas ─────────────────────────────────────────────────────────────
@@ -42,7 +57,10 @@ app.get('/health', (req, res) => {
 // ── Tratamento global de erros ────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('Erro não tratado:', err.message)
-  res.status(500).json({ ok: false, msg: 'Erro interno do servidor.' })
+  res.status(500).json({
+    ok: false,
+    msg: isProduction ? 'Erro interno do servidor.' : `Erro interno: ${err.message}`,
+  })
 })
 
 // ── Inicia o servidor ─────────────────────────────────────────────────
