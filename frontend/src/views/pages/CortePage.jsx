@@ -1,13 +1,15 @@
-import React, { useState, useEffect } from 'react'
-import { Scissors, QrCode, X, CheckCircle } from 'lucide-react'
+import React, { useEffect, useState } from 'react'
+import { CheckCircle, QrCode, Scissors, X } from 'lucide-react'
 import { chapaCtrl, corteCtrl } from '../../controllers/index.js'
 import { FormField, BtnPrimary } from '../components/UI.jsx'
+import { LIMITS, validateCorte } from '../../utils/validation.js'
 
 export default function CortePage({ onUpdate }) {
-  const [form, setForm] = useState({ osNumero: '', chapaId: '', cc: '', lc: '', obs: '' })
+  const [form, setForm] = useState({ osNumero:'', chapaId:'', cc:'', lc:'', obs:'' })
   const [done, setDone] = useState(null)
   const [chapas, setChapas] = useState([])
   const [loading, setLoading] = useState(false)
+  const [erro, setErro] = useState('')
 
   useEffect(() => { carregarChapas() }, [])
 
@@ -15,12 +17,16 @@ export default function CortePage({ onUpdate }) {
     setLoading(true)
     const r = await chapaCtrl.listarChapasDisponiveis()
     setChapas(r.ok ? r.data : [])
+    if (!r.ok && r.msg) onUpdate?.(r.msg, 'err')
     setLoading(false)
   }
 
-  const F = (k, v) => setForm(f => ({ ...f, [k]: v }))
+  const F = (k,v) => {
+    setErro('')
+    setForm(f => ({ ...f, [k]:v }))
+  }
   const chapa = chapas.find(c => c.id === form.chapaId)
-  const nomeRetalho = chapa ? (form.obs?.trim() ? `${chapa.nome} - ${form.obs}` : chapa.nome) : ''
+  const nomeRetalho = chapa ? (form.obs?.trim() ? `${chapa.nome} - ${form.obs.trim().slice(0,60)}` : chapa.nome) : ''
   const calc = (chapa && +form.cc > 0 && +form.lc > 0)
     ? chapaCtrl.calcularCorte(form.chapaId, +form.cc, +form.lc, nomeRetalho, chapa)
     : null
@@ -30,70 +36,72 @@ export default function CortePage({ onUpdate }) {
     : 0
 
   async function handleSalvar() {
-    if (!calc?.ok) return
+    const invalid = validateCorte(form, chapa)
+    if (invalid) return setErro(invalid)
+    if (!calc?.ok) return setErro(calc?.msg || 'Não foi possível calcular o corte.')
+
     const r = await corteCtrl.registrarCorte({
-      osNumero: form.osNumero,
-      chapaId: form.chapaId,
-      comprimentoConsumido: form.cc,
-      larguraConsumida: form.lc,
-      observacao: form.obs,
-      retalhos: calc.retalho ? [calc.retalho] : [],
+      osNumero:form.osNumero.trim(),
+      chapaId:form.chapaId,
+      comprimentoConsumido:Number(form.cc),
+      larguraConsumida:Number(form.lc),
+      observacao:form.obs.trim(),
+      retalhos:calc.retalho ? [calc.retalho] : [],
     })
 
     if (r.ok) {
       const retalho = Array.isArray(r.data) && r.data.length ? r.data[0] : null
-      setDone({ retalho, semRetalho: !!r.semRetalho })
-      setForm({ osNumero: '', chapaId: '', cc: '', lc: '', obs: '' })
+      setDone({ retalho, semRetalho:!!r.semRetalho })
+      setForm({ osNumero:'', chapaId:'', cc:'', lc:'', obs:'' })
+      setErro('')
       onUpdate(r.msg, 'ok')
-      carregarChapas()
+      await carregarChapas()
     } else {
+      setErro(r.msg)
       onUpdate(r.msg, 'err')
     }
   }
 
-  const canSave = calc?.ok && !!form.osNumero?.trim()
+  const canSave = !!calc?.ok && !validateCorte(form, chapa)
 
   return (
     <div>
-      <div style={{ marginBottom: 18 }}>
-        <h2 style={{ fontSize: 16, fontWeight: 700, color: '#111827' }}>Registrar Corte</h2>
+      <div style={{ marginBottom:18 }}>
+        <h2 style={{ fontSize:16, fontWeight:700, color:'#111827' }}>Registrar Corte</h2>
       </div>
 
       {done && (
-        <div style={{
-          marginBottom: 14, background: '#f0fdf4', border: '1px solid #bbf7d0',
-          borderRadius: 10, padding: '11px 14px', display: 'flex', alignItems: 'center', gap: 10,
-        }}>
-          <CheckCircle size={18} style={{ color: '#16a34a', flexShrink: 0 }} />
-          <div style={{ flex: 1 }}>
-            <p style={{ fontSize: 13, fontWeight: 600, color: '#15803d' }}>
+        <div style={{ marginBottom:14, background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:'11px 14px', display:'flex', alignItems:'center', gap:10 }}>
+          <CheckCircle size={18} style={{ color:'#16a34a', flexShrink:0 }}/>
+          <div style={{ flex:1 }}>
+            <p style={{ fontSize:13, fontWeight:600, color:'#15803d' }}>
               {done.retalho ? 'Corte registrado e retalho criado!' : 'Corte registrado com sucesso!'}
             </p>
             {done.retalho ? (
-              <p style={{ fontSize: 11, color: '#16a34a' }}>
+              <p style={{ fontSize:11, color:'#16a34a' }}>
                 {done.retalho.id} · {done.retalho.largura}×{done.retalho.comprimento} cm · {done.retalho.area} m² · Status: {done.retalho.status}
               </p>
             ) : (
-              <p style={{ fontSize: 11, color: '#16a34a' }}>
+              <p style={{ fontSize:11, color:'#16a34a' }}>
                 A chapa foi consumida sem geração de retalho reutilizável. O histórico do corte foi preservado.
               </p>
             )}
           </div>
-          <button onClick={() => setDone(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#16a34a', display: 'flex' }}>
-            <X size={16} />
-          </button>
+          <button onClick={() => setDone(null)} style={{ background:'none', border:'none', cursor:'pointer', color:'#16a34a', display:'flex' }}><X size={16}/></button>
         </div>
       )}
 
-      <div className="two-col" style={{ gap: 16 }}>
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f3f4f6', padding: 18 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 14 }}>Dados do Corte</p>
+      <div className="two-col" style={{ gap:16 }}>
+        <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f3f4f6', padding:18 }}>
+          <p style={{ fontSize:13, fontWeight:600, color:'#374151', marginBottom:14 }}>Dados do Corte</p>
 
-          <FormField label="Número da OS">
-            <input value={form.osNumero} onChange={e => F('osNumero', e.target.value)} placeholder="OS-000123" />
+          {erro && <p style={{ fontSize:12, color:'#dc2626', background:'#fef2f2', border:'1px solid #fecaca', borderRadius:8, padding:'8px 10px', marginBottom:10 }}>{erro}</p>}
+
+          <FormField label="Número da OS *">
+            <input maxLength={LIMITS.osNumero} value={form.osNumero} onChange={e => F('osNumero', e.target.value)} placeholder="OS-000123" />
           </FormField>
 
-          <FormField label="Chapa de Origem">
+          <FormField label="Chapa de Origem *">
             <select value={form.chapaId} onChange={e => F('chapaId', e.target.value)} disabled={loading}>
               <option value="">{loading ? 'Carregando...' : 'Selecione uma chapa...'}</option>
               {chapas.map(c => (
@@ -104,94 +112,78 @@ export default function CortePage({ onUpdate }) {
             </select>
           </FormField>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-            <FormField label="Comprimento Consumido (cm)">
-              <input type="number" value={form.cc} onChange={e => F('cc', e.target.value)} placeholder="0" />
+          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10 }}>
+            <FormField label="Comprimento Consumido (cm) *">
+              <input type="number" min="0.01" max={chapa?.comprimento || 10000} step="0.01" value={form.cc} onChange={e => F('cc', e.target.value)} placeholder="0" />
             </FormField>
-            <FormField label="Largura Consumida (cm)">
-              <input type="number" value={form.lc} onChange={e => F('lc', e.target.value)} placeholder="0" />
+            <FormField label="Largura Consumida (cm) *">
+              <input type="number" min="0.01" max={chapa?.largura || 10000} step="0.01" value={form.lc} onChange={e => F('lc', e.target.value)} placeholder="0" />
             </FormField>
           </div>
 
           <FormField label="Observações / ID do Projeto">
-            <textarea
-              value={form.obs}
-              onChange={e => F('obs', e.target.value)}
-              placeholder="ID do projeto ou observações adicionais..."
-              style={{ height: 72, resize: 'none' }}
-            />
+            <textarea value={form.obs} maxLength={LIMITS.observacao} onChange={e => F('obs', e.target.value)} placeholder="ID do projeto ou observações adicionais..." style={{ height:72, resize:'none' }}/>
+            <p style={{ fontSize:10, color:'#9ca3af', textAlign:'right' }}>{form.obs.length}/{LIMITS.observacao}</p>
           </FormField>
 
-          {calc && !calc.ok && (
-            <p style={{ fontSize: 12, color: '#dc2626', marginBottom: 10 }}>{calc.msg}</p>
-          )}
+          {calc && !calc.ok && <p style={{ fontSize:12, color:'#dc2626', marginBottom:10 }}>{calc.msg}</p>}
 
           {!!calc?.ok && (
-            <div style={{ background: '#fefce8', border: '1px solid #fde68a', borderRadius: 8, padding: '8px 12px', fontSize: 12, color: '#92400e', marginBottom: 12 }}>
+            <div style={{ background:'#fefce8', border:'1px solid #fde68a', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#92400e', marginBottom:12 }}>
               {calc.retalho
-                ? '⚠ Confira as medidas antes de salvar. O QR Code da sobra será gerado automaticamente.'
-                : '⚠ O corte informado não gera retalho retangular reutilizável. Apenas o corte será registrado.'}
+                ? 'Confira as medidas antes de salvar. O QR Code da sobra será gerado automaticamente.'
+                : 'O corte informado consome toda a área reutilizável. Apenas o corte será registrado.'}
             </div>
           )}
 
-          <BtnPrimary onClick={handleSalvar} disabled={!canSave} style={{ width: '100%', justifyContent: 'center' }}>
-            {calc?.retalho ? <QrCode size={15} /> : <Scissors size={15} />}
+          <BtnPrimary onClick={handleSalvar} disabled={!canSave} style={{ width:'100%', justifyContent:'center' }}>
+            {calc?.retalho ? <QrCode size={15}/> : <Scissors size={15}/>} 
             {calc?.retalho ? 'Salvar e Gerar QR Code' : 'Salvar Corte'}
           </BtnPrimary>
         </div>
 
-        <div style={{ background: '#fff', borderRadius: 12, border: '1px solid #f3f4f6', padding: 18 }}>
-          <p style={{ fontSize: 13, fontWeight: 600, color: '#374151', marginBottom: 14 }}>Pré-visualização da Sobra</p>
+        <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f3f4f6', padding:18 }}>
+          <p style={{ fontSize:13, fontWeight:600, color:'#374151', marginBottom:14 }}>Pré-visualização da Sobra</p>
 
           {chapa && calc?.ok ? (
             <>
-              <div style={{
-                background: chapa.cor, borderRadius: 10, padding: 14,
-                textAlign: 'center', color: '#fff', marginBottom: 14,
-              }}>
-                <p style={{ fontSize: 10, opacity: .7, marginBottom: 3 }}>CHAPA ORIGINAL</p>
-                <p style={{ fontSize: 13, fontWeight: 600 }}>{chapa.comprimento}×{chapa.largura} cm</p>
+              <div style={{ background:chapa.cor, borderRadius:10, padding:14, textAlign:'center', color:'#fff', marginBottom:14 }}>
+                <p style={{ fontSize:10, opacity:.7, marginBottom:3 }}>CHAPA ORIGINAL</p>
+                <p style={{ fontSize:13, fontWeight:600 }}>{chapa.comprimento}×{chapa.largura} cm</p>
               </div>
 
               {calc.retalho ? (
                 <>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8, marginBottom: 12 }}>
+                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
                     {[
                       ['Comprimento Restante', `${calc.retalho.comprimento} cm`],
                       ['Largura Restante', `${calc.retalho.largura} cm`],
                       ['Área Restante', `${calc.retalho.area} m²`],
                       ['Área Consumida', `${percentualConsumido}%`],
-                    ].map(([k, v]) => (
-                      <div key={k} style={{ background: '#f9fafb', borderRadius: 8, padding: '9px 12px' }}>
-                        <p style={{ fontSize: 10, color: '#9ca3af' }}>{k}</p>
-                        <p style={{ fontSize: 14, fontWeight: 700, color: '#1f2937' }}>{v}</p>
+                    ].map(([k,v]) => (
+                      <div key={k} style={{ background:'#f9fafb', borderRadius:8, padding:'9px 12px' }}>
+                        <p style={{ fontSize:10, color:'#9ca3af' }}>{k}</p>
+                        <p style={{ fontSize:14, fontWeight:700, color:'#1f2937' }}>{v}</p>
                       </div>
                     ))}
                   </div>
-                  <div style={{ background: '#f9fafb', borderRadius: 8, padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
-                    <div style={{ width: 40, height: 40, background: '#111', borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', flexShrink: 0 }}>
-                      <QrCode size={22} />
-                    </div>
-                    <div>
-                      <p style={{ fontSize: 12, fontWeight: 600 }}>QR Code de Identificação</p>
-                      <p style={{ fontSize: 11, color: '#9ca3af' }}>Identificador persistente gerado ao salvar</p>
-                    </div>
+                  <div style={{ background:'#f9fafb', borderRadius:8, padding:'10px 14px', display:'flex', alignItems:'center', gap:12 }}>
+                    <div style={{ width:40, height:40, background:'#111', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0 }}><QrCode size={22}/></div>
+                    <div><p style={{ fontSize:12, fontWeight:600 }}>QR Code de Identificação</p><p style={{ fontSize:11, color:'#9ca3af' }}>Identificador persistente gerado ao salvar</p></div>
                   </div>
                 </>
               ) : (
-                <div style={{ background: '#f9fafb', borderRadius: 8, padding: 20, textAlign: 'center' }}>
-                  <Scissors size={28} style={{ color: '#9ca3af', marginBottom: 8 }} />
-                  <p style={{ fontSize: 12, fontWeight: 600, color: '#374151' }}>Sem retalho reutilizável</p>
-                  <p style={{ fontSize: 11, color: '#9ca3af', marginTop: 4 }}>O sistema registrará o corte e inativará a chapa de origem.</p>
+                <div style={{ background:'#f9fafb', borderRadius:8, padding:20, textAlign:'center' }}>
+                  <Scissors size={28} style={{ color:'#9ca3af', marginBottom:8 }}/>
+                  <p style={{ fontSize:12, fontWeight:600, color:'#374151' }}>Sem retalho reutilizável</p>
+                  <p style={{ fontSize:11, color:'#9ca3af', marginTop:4 }}>O sistema registrará o corte e inativará a chapa de origem.</p>
                 </div>
               )}
             </>
           ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '75%', color: '#e5e7eb' }}>
-              <Scissors size={44} />
-              <p style={{ fontSize: 13, color: '#9ca3af', marginTop: 10 }}>
-                Selecione uma chapa e insira as medidas consumidas
-              </p>
+            <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', height:'75%', color:'#e5e7eb' }}>
+              <Scissors size={44}/>
+              <p style={{ fontSize:13, color:'#9ca3af', marginTop:10 }}>Selecione uma chapa e insira medidas válidas</p>
             </div>
           )}
         </div>
