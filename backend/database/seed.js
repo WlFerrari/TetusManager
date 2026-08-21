@@ -134,14 +134,32 @@ async function seed() {
 
   for (const [osNumero,chapaId,retalhoId,comprimentoConsumido,larguraConsumida,areaConsumida,areaRetalho,observacao] of cortes) {
     await query(`
+      WITH novo_corte AS (
+        SELECT
+          $1::varchar AS os_numero,
+          $2::varchar AS chapa_id,
+          $3::varchar AS retalho_id,
+          $4::numeric AS comprimento_consumido,
+          $5::numeric AS largura_consumida,
+          $6::numeric AS area_consumida,
+          $7::numeric AS area_retalho,
+          $8::text AS observacao,
+          $9::integer AS criado_por
+      )
       INSERT INTO cortes (
         os_numero,chapa_id,retalho_id,comprimento_consumido,largura_consumida,
         area_consumida,area_retalho,observacao,criado_por
       )
-      SELECT $1,$2,$3,$4,$5,$6,$7,$8,$9
+      SELECT
+        n.os_numero,n.chapa_id,n.retalho_id,n.comprimento_consumido,n.largura_consumida,
+        n.area_consumida,n.area_retalho,n.observacao,n.criado_por
+      FROM novo_corte n
       WHERE NOT EXISTS (
-        SELECT 1 FROM cortes
-        WHERE os_numero=$1 AND chapa_id=$2 AND retalho_id IS NOT DISTINCT FROM $3
+        SELECT 1
+        FROM cortes c
+        WHERE c.os_numero = n.os_numero
+          AND c.chapa_id IS NOT DISTINCT FROM n.chapa_id
+          AND c.retalho_id IS NOT DISTINCT FROM n.retalho_id
       )
     `, [
       osNumero,chapaId,retalhoId,comprimentoConsumido,larguraConsumida,
