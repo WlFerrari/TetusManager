@@ -1,9 +1,9 @@
 import React, { useRef, useState } from 'react'
-import { Bell, Menu, Layers, LayoutDashboard, Package, Scissors, Settings, Sun, Moon } from 'lucide-react'
+import { Bell, Layers, LayoutDashboard, Menu, Moon, Package, Scissors, Settings, Sun } from 'lucide-react'
 
 import { ThemeProvider, useTheme } from './contexts/ThemeContext.jsx'
 import Sidebar from './views/components/Sidebar.jsx'
-import { Toast, Avatar } from './views/components/UI.jsx'
+import { Avatar, Toast } from './views/components/UI.jsx'
 import { PERFIL_LABELS } from './models/index.js'
 
 import LoginPage from './views/pages/LoginPage.jsx'
@@ -11,20 +11,8 @@ import DashboardPage from './views/pages/DashboardPage.jsx'
 import ChapasPage from './views/pages/ChapasPage.jsx'
 import RetalhosPage from './views/pages/RetalhosPage.jsx'
 import CortePage from './views/pages/CortePage.jsx'
+import RelatoriosPage from './views/pages/RelatoriosPage.jsx'
 import ConfiguracoesPage from './views/pages/ConfiguracoesPage.jsx'
-
-function RelatoriosPage() {
-  return (
-    <div>
-      <h1 style={{ fontSize:20, fontWeight:700, marginBottom:6 }}>Relatórios</h1>
-      <p style={{ fontSize:13, marginBottom:20 }}>Análise de aproveitamento de material</p>
-      <div style={{ background:'var(--bg-secondary)', borderRadius:12, border:'1px solid var(--border-color)', padding:60, textAlign:'center' }}>
-        <p style={{ fontSize:15, fontWeight:500 }}>Módulo em desenvolvimento</p>
-        <p style={{ fontSize:13, marginTop:6 }}>Funcionalidade planejada para evolução do UC02.</p>
-      </div>
-    </div>
-  )
-}
 
 const BOTTOM_NAV = [
   { id:'dashboard', label:'Início', Icon:LayoutDashboard, perm:'verDashboard' },
@@ -38,6 +26,7 @@ function AppContent() {
   const [user, setUser] = useState(null)
   const [page, setPage] = useState('dashboard')
   const [sideOpen, setSideOpen] = useState(false)
+  const [sideCollapsed, setSideCollapsed] = useState(() => localStorage.getItem('tetus-sidebar-collapsed') === '1')
   const [toast, setToast] = useState(null)
   const timer = useRef(null)
 
@@ -49,6 +38,14 @@ function AppContent() {
 
   function handleUserUpdate(updatedUser) { setUser(updatedUser) }
 
+  function toggleSidebar() {
+    setSideCollapsed(value => {
+      const next = !value
+      localStorage.setItem('tetus-sidebar-collapsed', next ? '1' : '0')
+      return next
+    })
+  }
+
   if (!user) return <LoginPage onLogin={u => { setUser(u); setPage('dashboard') }} />
 
   const perms = user.permissoes || {}
@@ -57,7 +54,7 @@ function AppContent() {
     chapas: perms.verEstoque !== false ? <ChapasPage onUpdate={showToast} user={user} /> : null,
     retalhos: perms.verEstoque !== false ? <RetalhosPage onUpdate={showToast} user={user} /> : null,
     corte: perms.registrarCorte !== false ? <CortePage onUpdate={showToast} /> : null,
-    relatorios: perms.verRelatorios !== false ? <RelatoriosPage /> : null,
+    relatorios: perms.verRelatorios !== false ? <RelatoriosPage onUpdate={showToast} /> : null,
     configuracoes: perms.verConfiguracoes !== false
       ? <ConfiguracoesPage user={user} onUserUpdate={handleUserUpdate} onToast={showToast} />
       : null,
@@ -65,17 +62,26 @@ function AppContent() {
   const mobileNav = BOTTOM_NAV.filter(item => perms[item.perm] !== false)
 
   return (
-    <div className="app-layout">
-      <Sidebar page={page} setPage={setPage} user={user} onLogout={() => setUser(null)} open={sideOpen} onClose={() => setSideOpen(false)} />
+    <div className={`app-layout ${sideCollapsed ? 'sidebar-collapsed' : ''}`}>
+      <Sidebar
+        page={page}
+        setPage={setPage}
+        user={user}
+        onLogout={() => setUser(null)}
+        open={sideOpen}
+        onClose={() => setSideOpen(false)}
+        collapsed={sideCollapsed}
+        onToggleCollapsed={toggleSidebar}
+      />
 
       <main className="main-content">
         <div className="mobile-header">
-          <button onClick={() => setSideOpen(true)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', padding:4 }}><Menu size={22}/></button>
+          <button onClick={() => setSideOpen(true)} style={{ background:'none', border:'none', cursor:'pointer', display:'flex', padding:4 }} aria-label="Abrir menu"><Menu size={22}/></button>
           <div style={{ display:'flex', alignItems:'center', gap:8 }}>
             <div style={{ width:28, height:28, background:'#2563eb', borderRadius:7, display:'flex', alignItems:'center', justifyContent:'center' }}><Layers size={15} style={{ color:'#fff' }}/></div>
             <span style={{ fontWeight:700, fontSize:14 }}>TetusManager</span>
           </div>
-          <button onClick={() => perms.verConfiguracoes !== false && setPage('configuracoes')} style={{ background:'none', border:'none', cursor:'pointer', display:'flex' }}>
+          <button onClick={() => perms.verConfiguracoes !== false && setPage('configuracoes')} style={{ background:'none', border:'none', cursor:'pointer', display:'flex' }} aria-label="Abrir configurações">
             {user.foto ? <img src={user.foto} alt="Perfil" style={{ width:32, height:32, borderRadius:'50%', objectFit:'cover' }}/> : <Avatar name={user.nome} size={32}/>} 
           </button>
         </div>
@@ -84,7 +90,7 @@ function AppContent() {
           <div />
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
             <div style={{ position:'relative' }}>
-              <button style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}><Bell size={17}/></button>
+              <button style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }} aria-label="Notificações"><Bell size={17}/></button>
               <span style={{ position:'absolute', top:8, right:8, width:7, height:7, background:'#2563eb', borderRadius:'50%' }}/>
             </div>
             <button onClick={toggleTheme} title={`Mudar para modo ${theme === 'light' ? 'escuro' : 'claro'}`} style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
