@@ -40,20 +40,18 @@ export default function Sidebar({
       <aside className={`sidebar ${open ? 'open' : ''} ${collapsed ? 'collapsed' : ''}`}>
         <div className="sidebar-brand">
           <img src={logo} alt="Tetus Marmoraria" className="sidebar-logo"/>
-          {!collapsed && (
-            <div className="sidebar-brand-text">
-              <p className="sidebar-title">TetusManager</p>
-              <p className="sidebar-subtitle">Sistema de Estoque</p>
-            </div>
-          )}
-          <button onClick={onClose} className="mobile-close-btn sidebar-icon-button" title="Fechar menu">
+          <div className="sidebar-brand-text">
+            <p className="sidebar-title">TetusManager</p>
+            <p className="sidebar-subtitle">Sistema de Estoque</p>
+          </div>
+          <button onClick={onClose} className="mobile-close-btn sidebar-icon-button" title="Fechar menu" aria-label="Fechar menu">
             <X size={18}/>
           </button>
           <button
             type="button"
             onClick={onToggleCollapsed}
             className="desktop-collapse-btn sidebar-icon-button"
-            title={collapsed ? 'Expandir barra lateral' : 'Ocultar textos da barra lateral'}
+            title={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
             aria-label={collapsed ? 'Expandir barra lateral' : 'Recolher barra lateral'}
           >
             {collapsed ? <ChevronRight size={17}/> : <ChevronLeft size={17}/>}
@@ -70,7 +68,7 @@ export default function Sidebar({
               className={`sidebar-nav-item ${page === id ? 'active' : ''}`}
             >
               <Icon size={17}/>
-              {!collapsed && <span>{label}</span>}
+              <span>{label}</span>
             </button>
           ))}
         </nav>
@@ -86,12 +84,10 @@ export default function Sidebar({
                 ? <img src={user.foto} alt="Perfil" className="sidebar-avatar"/>
                 : <Avatar name={user.nome} size={30}/>
               }
-              {!collapsed && (
-                <div className="sidebar-user-text">
-                  <p>{user.nome}</p>
-                  <span>{PERFIL_LABELS[user.perfil] || user.perfil}</span>
-                </div>
-              )}
+              <div className="sidebar-user-text">
+                <p>{user.nome}</p>
+                <span>{PERFIL_LABELS[user.perfil] || user.perfil}</span>
+              </div>
             </button>
           )}
           <button
@@ -101,7 +97,7 @@ export default function Sidebar({
             className="sidebar-logout-button"
           >
             <LogOut size={16}/>
-            {!collapsed && <span>Sair</span>}
+            <span>Sair</span>
           </button>
         </div>
       </aside>
