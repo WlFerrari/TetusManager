@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import { Bookmark, BookmarkX, Camera, CheckSquare, Edit2, Eye, Plus, QrCode, X, XSquare } from 'lucide-react'
+import { Bookmark, BookmarkX, Camera, CheckSquare, Edit2, Eye, Plus, QrCode, RotateCcw, X, XSquare } from 'lucide-react'
 import { corteCtrl, retalhoCtrl } from '../../controllers/index.js'
 import { STATUS_RETALHO, TIPOS_ROCHA } from '../../models/index.js'
 import {
@@ -142,6 +142,11 @@ export default function RetalhosPage({ onUpdate, user }) {
     await runAction(retalhoCtrl.marcarDescartado.bind(retalhoCtrl), retalho.id)
   }
 
+  async function handleReativar(retalho) {
+    if (!window.confirm(`Corrigir o status do retalho "${retalho.nome}" e devolvê-lo para Disponível? Use esta opção somente quando o status Utilizado/Descartado tiver sido informado por engano.`)) return
+    await runAction(retalhoCtrl.reativar.bind(retalhoCtrl), retalho.id)
+  }
+
   const activeFilters = Object.values(filters).filter(v => String(v ?? '').trim()).length
   const areaForm = Number(form.comprimento) > 0 && Number(form.largura) > 0
     ? ((Number(form.comprimento) * Number(form.largura)) / 10000).toFixed(4)
@@ -232,6 +237,7 @@ export default function RetalhosPage({ onUpdate, user }) {
                 { label:'Liberar reserva', icon:<BookmarkX size={13}/>, hidden:r.status !== 'Reservado', onClick:() => runAction(retalhoCtrl.liberarReserva.bind(retalhoCtrl), r.id) },
                 { label:'Marcar como utilizado', icon:<CheckSquare size={13}/>, hidden:!['Disponível','Reservado'].includes(r.status), onClick:() => handleConsumir(r) },
                 { label:'Descartar', icon:<XSquare size={13}/>, danger:true, hidden:['Consumido','Descartado'].includes(r.status), onClick:() => handleDescartar(r) },
+                { label:'Corrigir status para Disponível', icon:<RotateCcw size={13}/>, hidden:!['Consumido','Descartado'].includes(r.status), onClick:() => handleReativar(r) },
               ]}/>
             )}
           </div>
