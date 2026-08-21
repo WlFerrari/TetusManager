@@ -8,26 +8,26 @@ const { query } = require('../database/connection')
 function toModel(row) {
   if (!row) return null
   return {
-    id:            row.id,
-    origem:        row.origem || null,
-    origemTipo:    row.origem_tipo || (row.origem ? 'AUTOMATICA' : 'MANUAL'),
-    nome:          row.nome,
-    tipo:          row.tipo,
-    cor:           row.cor,
-    largura:       Number(row.largura),
-    comprimento:   Number(row.comprimento),
-    espessura:     Number(row.espessura),
-    area:          Number(row.area),
-    status:        row.status,
-    localizacao:   row.localizacao || '',
-    qrCode:        row.qr_code,
-    foto:          row.foto || null,
-    criadoPor:     row.criado_por || null,
-    consumidoPor:  row.consumido_por || null,
-    consumidoEm:   row.consumido_em ? new Date(row.consumido_em).toLocaleDateString('pt-BR') : null,
-    descartadoPor: row.descartado_por || null,
-    descartadoEm:  row.descartado_em ? new Date(row.descartado_em).toLocaleDateString('pt-BR') : null,
-    criadoEm:      new Date(row.criado_em).toLocaleDateString('pt-BR'),
+    id:row.id,
+    origem:row.origem || null,
+    origemTipo:row.origem_tipo || (row.origem ? 'AUTOMATICA' : 'MANUAL'),
+    nome:row.nome,
+    tipo:row.tipo,
+    cor:row.cor,
+    largura:Number(row.largura),
+    comprimento:Number(row.comprimento),
+    espessura:Number(row.espessura),
+    area:Number(row.area),
+    status:row.status,
+    localizacao:row.localizacao || '',
+    qrCode:row.qr_code,
+    foto:row.foto || null,
+    criadoPor:row.criado_por || null,
+    consumidoPor:row.consumido_por || null,
+    consumidoEm:row.consumido_em ? new Date(row.consumido_em).toLocaleDateString('pt-BR') : null,
+    descartadoPor:row.descartado_por || null,
+    descartadoEm:row.descartado_em ? new Date(row.descartado_em).toLocaleDateString('pt-BR') : null,
+    criadoEm:new Date(row.criado_em).toLocaleDateString('pt-BR'),
   }
 }
 
@@ -40,7 +40,7 @@ function buildRetalhoQrPayload({ id }) {
 }
 
 const RetalhoRepository = {
-  async insert(data, exec = query) {
+  async insert(data, exec=query) {
     const id = data.id || gerarId()
     const area = parseFloat(((+data.comprimento * +data.largura) / 10000).toFixed(4))
     const nome = data.nome?.trim() || `Sobra-${id}`
@@ -69,7 +69,7 @@ const RetalhoRepository = {
 
   async inserir(data) { return this.insert(data) },
 
-  async findAll(filtros = '') {
+  async findAll(filtros='') {
     if (typeof filtros === 'string') {
       if (filtros) {
         const { rows } = await query(`
@@ -91,7 +91,7 @@ const RetalhoRepository = {
 
     const where = []
     const params = []
-    const add = (sql, val) => {
+    const add = (sql,val) => {
       params.push(val)
       where.push(sql.replace(/\$/g, `$${params.length}`))
     }
@@ -113,15 +113,14 @@ const RetalhoRepository = {
     return rows.map(toModel)
   },
 
-  async findById(id, exec = query) {
+  async findById(id, exec=query) {
     const { rows } = await exec('SELECT * FROM retalhos WHERE id=$1', [id])
     return toModel(rows[0])
   },
 
   async buscarPorId(id) { return this.findById(id) },
 
-  async update(id, data, exec = query) {
-    // Área nunca é aceita do cliente: sempre deriva das dimensões validadas.
+  async update(id,data,exec=query) {
     const area = parseFloat(((+data.comprimento * +data.largura) / 10000).toFixed(4))
     const nome = data.nome?.trim() || `Sobra-${id}`
     const tipo = data.tipo || 'Granito'
@@ -147,13 +146,13 @@ const RetalhoRepository = {
     return toModel(rows[0])
   },
 
-  async setStatus(id, status, userId = null, exec = query) {
+  async setStatus(id,status,userId=null,exec=query) {
     const auditSql = status === 'Consumido'
       ? ', consumido_por=$3, consumido_em=NOW()'
       : status === 'Descartado'
         ? ', descartado_por=$3, descartado_em=NOW()'
         : ''
-    const params = auditSql ? [status, id, userId] : [status, id]
+    const params = auditSql ? [status,id,userId] : [status,id]
     const { rows } = await exec(`
       UPDATE retalhos SET status=$1 ${auditSql}
       WHERE id=$2 RETURNING *
@@ -162,12 +161,25 @@ const RetalhoRepository = {
     return toModel(rows[0])
   },
 
-  async marcarReservado(id) { return this.setStatus(id, 'Reservado') },
-  async marcarDisponivel(id) { return this.setStatus(id, 'Disponível') },
-  async marcarConsumido(id, consumidoPor) { return this.setStatus(id, 'Consumido', consumidoPor) },
-  async marcarDescartado(id, descartadoPor) { return this.setStatus(id, 'Descartado', descartadoPor) },
+  async reativar(id,exec=query) {
+    const { rows } = await exec(`
+      UPDATE retalhos
+      SET status='Disponível',
+          consumido_por=NULL, consumido_em=NULL,
+          descartado_por=NULL, descartado_em=NULL
+      WHERE id=$1
+      RETURNING *
+    `, [id])
+    if (!rows[0]) throw new Error(`Retalho "${id}" não encontrado`)
+    return toModel(rows[0])
+  },
 
-  async delete(id) { return this.marcarDescartado(id, null) },
+  async marcarReservado(id) { return this.setStatus(id,'Reservado') },
+  async marcarDisponivel(id) { return this.setStatus(id,'Disponível') },
+  async marcarConsumido(id,consumidoPor) { return this.setStatus(id,'Consumido',consumidoPor) },
+  async marcarDescartado(id,descartadoPor) { return this.setStatus(id,'Descartado',descartadoPor) },
+
+  async delete(id) { return this.marcarDescartado(id,null) },
 
   async stats() {
     const { rows } = await query(`
@@ -181,12 +193,12 @@ const RetalhoRepository = {
       FROM retalhos
     `)
     return {
-      total: Number(rows[0].total),
-      disponiveis: Number(rows[0].disponiveis),
-      reservados: Number(rows[0].reservados),
-      consumidos: Number(rows[0].consumidos),
-      descartados: Number(rows[0].descartados),
-      areaTotal: parseFloat(Number(rows[0].area_total).toFixed(2)),
+      total:Number(rows[0].total),
+      disponiveis:Number(rows[0].disponiveis),
+      reservados:Number(rows[0].reservados),
+      consumidos:Number(rows[0].consumidos),
+      descartados:Number(rows[0].descartados),
+      areaTotal:parseFloat(Number(rows[0].area_total).toFixed(2)),
     }
   },
 }
