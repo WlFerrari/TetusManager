@@ -10,6 +10,9 @@ import {
 import {
   Avatar, Badge, BtnIcon, BtnPrimary, BtnSecondary, FormField, Modal, SearchInput,
 } from '../components/UI.jsx'
+import {
+  LIMITS, password, prepareImageFile, validateCompany, validateProfile, validateUser,
+} from '../../utils/validation.js'
 
 function Switch({ checked, onChange, disabled=false }) {
   return (
@@ -40,27 +43,36 @@ function Tab({ id, label, Icon, active, onClick }) {
 function TabMeuPerfil({ user, onUserUpdate, onToast }) {
   const [form, setForm] = useState({ nome:user.nome, telefone:user.telefone || '', cargo:user.cargo || '', foto:user.foto || null })
   const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
   const fileRef = useRef()
 
-  function handleFoto(e) {
-    const file = e.target.files?.[0]
+  async function handleFoto(e) {
+    const input = e.target
+    const file = input.files?.[0]
     if (!file) return
-    const reader = new FileReader()
-    reader.onload = ev => setForm(f => ({ ...f, foto:ev.target.result }))
-    reader.readAsDataURL(file)
+    const result = await prepareImageFile(file)
+    input.value = ''
+    if (!result.ok) return setErro(result.msg)
+    setErro('')
+    setForm(f => ({ ...f, foto:result.data }))
   }
 
   async function handleSave() {
+    const invalid = validateProfile(form)
+    if (invalid) return setErro(invalid)
     setSaving(true)
+    setErro('')
     const r = await userCtrl.atualizarPerfil(user.id, form)
     onToast(r.msg, r.ok ? 'ok' : 'err')
     if (r.ok) onUserUpdate(r.data)
+    else setErro(r.msg)
     setSaving(false)
   }
 
   return (
     <div style={{ maxWidth:560 }}>
       <p style={{ fontSize:14, color:'#6b7280', marginBottom:24 }}>Atualize suas informações pessoais e foto de perfil.</p>
+      {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:12 }}>{erro}</p>}
       <div style={{ display:'flex', alignItems:'center', gap:20, marginBottom:28 }}>
         <div style={{ position:'relative' }}>
           {form.foto
@@ -70,19 +82,20 @@ function TabMeuPerfil({ user, onUserUpdate, onToast }) {
           <button onClick={() => fileRef.current?.click()} style={{ position:'absolute', bottom:0, right:0, width:26, height:26, borderRadius:'50%', background:'#2563eb', border:'2px solid #fff', display:'flex', alignItems:'center', justifyContent:'center', cursor:'pointer' }}>
             <Camera size={13} style={{ color:'#fff' }}/>
           </button>
-          <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleFoto}/>
+          <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp" style={{ display:'none' }} onChange={handleFoto}/>
         </div>
         <div>
           <p style={{ fontWeight:600, fontSize:15, color:'#1f2937' }}>{user.nome}</p>
           <p style={{ fontSize:12, color:'#6b7280' }}>{user.email}</p>
           <p style={{ fontSize:11, color:'#9ca3af', marginTop:2 }}>{PERFIL_LABELS[user.perfil] || user.perfil} · Membro desde {user.criadoEm}</p>
+          {form.foto && <button type="button" onClick={() => setForm(f => ({ ...f, foto:null }))} style={{ border:'none', background:'transparent', color:'#dc2626', padding:0, marginTop:5, cursor:'pointer', fontSize:11 }}>Remover foto</button>}
         </div>
       </div>
 
-      <FormField label="Nome completo *"><input value={form.nome} onChange={e => setForm(f => ({ ...f, nome:e.target.value }))}/></FormField>
+      <FormField label="Nome completo *"><input maxLength={LIMITS.nome} value={form.nome} onChange={e => { setErro(''); setForm(f => ({ ...f, nome:e.target.value })) }}/></FormField>
       <div className="form-grid-2">
-        <FormField label="Telefone"><input value={form.telefone} onChange={e => setForm(f => ({ ...f, telefone:e.target.value }))}/></FormField>
-        <FormField label="Cargo"><input value={form.cargo} onChange={e => setForm(f => ({ ...f, cargo:e.target.value }))}/></FormField>
+        <FormField label="Telefone"><input maxLength={LIMITS.telefone} value={form.telefone} onChange={e => { setErro(''); setForm(f => ({ ...f, telefone:e.target.value })) }}/></FormField>
+        <FormField label="Cargo"><input maxLength={LIMITS.cargo} value={form.cargo} onChange={e => { setErro(''); setForm(f => ({ ...f, cargo:e.target.value })) }}/></FormField>
       </div>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:20 }}>
         {[
@@ -104,14 +117,22 @@ function TabSeguranca({ user, onToast }) {
   const [form, setForm] = useState({ atual:'', nova:'', confirma:'' })
   const [show, setShow] = useState({ atual:false, nova:false, confirma:false })
   const [saving, setSaving] = useState(false)
+  const [erro, setErro] = useState('')
 
   async function handleSalvar() {
-    if (form.nova !== form.confirma) return onToast('As senhas não coincidem.', 'err')
-    if (form.nova.length < 6) return onToast('A nova senha deve possuir ao menos 6 caracteres.', 'err')
+    const currentInvalid = password(form.atual, 'Senha atual')
+    if (currentInvalid) return setErro(currentInvalid)
+    const newInvalid = password(form.nova, 'Nova senha')
+    if (newInvalid) return setErro(newInvalid)
+    if (form.nova !== form.confirma) return setErro('As senhas não coincidem.')
+    if (form.nova === form.atual) return setErro('A nova senha deve ser diferente da senha atual.')
+
     setSaving(true)
+    setErro('')
     const r = await userCtrl.alterarSenha(form.atual, form.nova)
     onToast(r.msg, r.ok ? 'ok' : 'err')
     if (r.ok) setForm({ atual:'', nova:'', confirma:'' })
+    else setErro(r.msg)
     setSaving(false)
   }
 
@@ -119,7 +140,7 @@ function TabSeguranca({ user, onToast }) {
     return (
       <FormField label={label}>
         <div style={{ position:'relative' }}>
-          <input type={show[fkey] ? 'text' : 'password'} value={form[fkey]} onChange={e => setForm(f => ({ ...f, [fkey]:e.target.value }))} style={{ paddingRight:40 }}/>
+          <input maxLength={72} type={show[fkey] ? 'text' : 'password'} value={form[fkey]} onChange={e => { setErro(''); setForm(f => ({ ...f, [fkey]:e.target.value })) }} style={{ paddingRight:40 }}/>
           <button type="button" onClick={() => setShow(s => ({ ...s, [fkey]:!s[fkey] }))} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'#9ca3af' }}>
             {show[fkey] ? <EyeOff size={15}/> : <Eye size={15}/>} 
           </button>
@@ -133,6 +154,7 @@ function TabSeguranca({ user, onToast }) {
       <p style={{ fontSize:14, color:'#6b7280', marginBottom:24 }}>Altere sua senha de acesso. A senha atual é validada no backend.</p>
       <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f3f4f6', padding:20, marginBottom:20 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}><Lock size={18} style={{ color:'#2563eb' }}/><strong>Alterar senha</strong></div>
+        {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
         <PasswordField label="Senha atual *" fkey="atual"/>
         <PasswordField label="Nova senha *" fkey="nova"/>
         <PasswordField label="Confirmar senha *" fkey="confirma"/>
@@ -152,6 +174,7 @@ function TabEmpresa({ user, onToast }) {
   const [empresa, setEmpresa] = useState(null)
   const [form, setForm] = useState({})
   const [editing, setEditing] = useState(false)
+  const [erro, setErro] = useState('')
 
   useEffect(() => { carregar() }, [])
   async function carregar() {
@@ -163,25 +186,30 @@ function TabEmpresa({ user, onToast }) {
   if (!empresa) return <p style={{ color:'#9ca3af' }}>Carregando...</p>
 
   async function salvar() {
+    const invalid = validateCompany(form)
+    if (invalid) return setErro(invalid)
+    setErro('')
     const r = await empresaCtrl.atualizar(form)
     onToast(r.msg, r.ok ? 'ok' : 'err')
     if (r.ok) { setEmpresa(r.data); setEditing(false) }
+    else setErro(r.msg)
   }
 
-  const fields = [['Nome','nome'],['CNPJ','cnpj'],['E-mail','email'],['Telefone','telefone'],['Endereço','endereco']]
+  const fields = [['Nome','nome',LIMITS.nome],['CNPJ','cnpj',20],['E-mail','email',160],['Telefone','telefone',LIMITS.telefone],['Endereço','endereco',LIMITS.endereco]]
   return (
     <div style={{ maxWidth:600 }}>
       <p style={{ fontSize:14, color:'#6b7280', marginBottom:20 }}>Dados cadastrais visíveis e editáveis pelo Administrador.</p>
       {!editing && (
         <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', background:'#fff', border:'1px solid #f3f4f6', borderRadius:12, padding:18, marginBottom:14 }}>
           <div><strong>{empresa.nome}</strong><p style={{ fontSize:12, color:'#6b7280' }}>{empresa.cnpj}</p></div>
-          <BtnSecondary onClick={() => { setForm({ ...empresa }); setEditing(true) }}><Edit2 size={13}/> Editar</BtnSecondary>
+          <BtnSecondary onClick={() => { setForm({ ...empresa }); setErro(''); setEditing(true) }}><Edit2 size={13}/> Editar</BtnSecondary>
         </div>
       )}
       {editing ? (
         <div style={{ background:'#fff', border:'1px solid #f3f4f6', borderRadius:12, padding:18 }}>
-          {fields.map(([label,key]) => <FormField key={key} label={label}><input value={form[key] || ''} onChange={e => setForm(f => ({ ...f, [key]:e.target.value }))}/></FormField>)}
-          <div style={{ display:'flex', gap:8 }}><BtnSecondary onClick={() => setEditing(false)}>Cancelar</BtnSecondary><BtnPrimary onClick={salvar}><Save size={14}/> Salvar</BtnPrimary></div>
+          {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
+          {fields.map(([label,key,max]) => <FormField key={key} label={label}><input type={key === 'email' ? 'email' : 'text'} maxLength={max} value={form[key] || ''} onChange={e => { setErro(''); setForm(f => ({ ...f, [key]:e.target.value })) }}/></FormField>)}
+          <div style={{ display:'flex', gap:8 }}><BtnSecondary onClick={() => { setEditing(false); setErro('') }}>Cancelar</BtnSecondary><BtnPrimary onClick={salvar}><Save size={14}/> Salvar</BtnPrimary></div>
         </div>
       ) : fields.map(([label,key]) => (
         <div key={key} style={{ display:'flex', justifyContent:'space-between', padding:'11px 16px', background:'#fff', borderBottom:'1px solid #f3f4f6' }}>
@@ -199,25 +227,33 @@ function TabUsuarios({ user, onToast }) {
   const [modal, setModal] = useState(null)
   const [target, setTarget] = useState(null)
   const [form, setForm] = useState({})
+  const [erro, setErro] = useState('')
   const BLANK = { nome:'', email:'', perfil:'Vendedor', status:'Ativo', senha:'123456', telefone:'', cargo:'' }
 
   useEffect(() => { if (isAdmin) carregar() }, [search, isAdmin])
   async function carregar() {
     const r = await userCtrl.listar(search)
     setLista(r.ok ? r.data : [])
+    if (!r.ok && r.msg) onToast(r.msg, 'err')
   }
-  const F = (k,v) => setForm(f => ({ ...f, [k]:v }))
-  const close = () => { setModal(null); setTarget(null) }
+  const F = (k,v) => { setErro(''); setForm(f => ({ ...f, [k]:v })) }
+  const close = () => { setModal(null); setTarget(null); setErro('') }
 
   if (!isAdmin) return <p style={{ color:'#9ca3af' }}>Somente o Administrador pode gerenciar usuários.</p>
 
   async function add() {
-    const r = await userCtrl.criar(form); onToast(r.msg, r.ok ? 'ok':'err')
-    if (r.ok) { await carregar(); close() }
+    const invalid = validateUser(form, { requirePassword:true })
+    if (invalid) return setErro(invalid)
+    const r = await userCtrl.criar(form)
+    onToast(r.msg, r.ok ? 'ok':'err')
+    if (r.ok) { await carregar(); close() } else setErro(r.msg)
   }
   async function edit() {
-    const r = await userCtrl.atualizar(form.id, form); onToast(r.msg, r.ok ? 'ok':'err')
-    if (r.ok) { await carregar(); close() }
+    const invalid = validateUser(form)
+    if (invalid) return setErro(invalid)
+    const r = await userCtrl.atualizar(form.id, form)
+    onToast(r.msg, r.ok ? 'ok':'err')
+    if (r.ok) { await carregar(); close() } else setErro(r.msg)
   }
   async function toggle(id) {
     const r = await userCtrl.toggleStatus(id); onToast(r.msg, r.ok ? 'ok':'err')
@@ -236,9 +272,9 @@ function TabUsuarios({ user, onToast }) {
     <div>
       <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:14 }}>
         <p style={{ fontSize:13, color:'#6b7280' }}>Gerencie contas por ativação/inativação lógica e permissões.</p>
-        <BtnPrimary onClick={() => { setForm(BLANK); setModal('add') }}><Plus size={14}/> Novo Usuário</BtnPrimary>
+        <BtnPrimary onClick={() => { setForm({ ...BLANK }); setErro(''); setModal('add') }}><Plus size={14}/> Novo Usuário</BtnPrimary>
       </div>
-      <SearchInput value={search} onChange={setSearch} placeholder="Buscar usuário..."/>
+      <SearchInput value={search} onChange={v => setSearch(v.slice(0,120))} placeholder="Buscar usuário..."/>
       <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f3f4f6', overflow:'hidden' }}>
         <table style={{ width:'100%', borderCollapse:'collapse' }}>
           <thead><tr style={{ background:'#f9fafb' }}>{['Usuário','Perfil','Status','Ações'].map(h => <th key={h} style={{ padding:'9px 14px', textAlign:'left', fontSize:11, color:'#9ca3af' }}>{h}</th>)}</tr></thead>
@@ -249,7 +285,7 @@ function TabUsuarios({ user, onToast }) {
               <td style={{ padding:'11px 14px' }}><Badge status={u.status}/></td>
               <td style={{ padding:'11px 14px' }}><div style={{ display:'flex', gap:5 }}>
                 <BtnIcon title="Permissões" onClick={() => { setTarget(u); setModal('perm') }}><Shield size={13}/></BtnIcon>
-                <BtnIcon title="Editar" onClick={() => { setForm({ ...u }); setModal('edit') }}><Edit2 size={13}/></BtnIcon>
+                <BtnIcon title="Editar" onClick={() => { setForm({ ...u }); setErro(''); setModal('edit') }}><Edit2 size={13}/></BtnIcon>
                 <button onClick={() => toggle(u.id)} style={{ border:'1px solid #e5e7eb', borderRadius:6, background:'#fff', cursor:'pointer', padding:'5px 9px', fontSize:11 }}>
                   {u.status === 'Ativo' ? <><UserX size={13}/> Inativar</> : <><UserCheck size={13}/> Ativar</>}
                 </button>
@@ -261,15 +297,16 @@ function TabUsuarios({ user, onToast }) {
 
       {(modal === 'add' || modal === 'edit') && (
         <Modal title={modal === 'add' ? 'Novo Usuário' : 'Editar Usuário'} onClose={close}>
-          <FormField label="Nome completo *"><input value={form.nome || ''} onChange={e => F('nome',e.target.value)}/></FormField>
-          <FormField label="E-mail *"><input type="email" value={form.email || ''} onChange={e => F('email',e.target.value)}/></FormField>
+          {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
+          <FormField label="Nome completo *"><input maxLength={LIMITS.nome} value={form.nome || ''} onChange={e => F('nome',e.target.value)}/></FormField>
+          <FormField label="E-mail *"><input type="email" maxLength={160} value={form.email || ''} onChange={e => F('email',e.target.value)}/></FormField>
           <div className="form-grid-2">
-            <FormField label="Telefone"><input value={form.telefone || ''} onChange={e => F('telefone',e.target.value)}/></FormField>
-            <FormField label="Cargo"><input value={form.cargo || ''} onChange={e => F('cargo',e.target.value)}/></FormField>
+            <FormField label="Telefone"><input maxLength={LIMITS.telefone} value={form.telefone || ''} onChange={e => F('telefone',e.target.value)}/></FormField>
+            <FormField label="Cargo"><input maxLength={LIMITS.cargo} value={form.cargo || ''} onChange={e => F('cargo',e.target.value)}/></FormField>
             <FormField label="Perfil"><select value={form.perfil || 'Vendedor'} onChange={e => F('perfil',e.target.value)}>{PERFIS_USUARIO.map(p => <option key={p} value={p}>{PERFIL_LABELS[p] || p}</option>)}</select></FormField>
             <FormField label="Status"><select value={form.status || 'Ativo'} onChange={e => F('status',e.target.value)}><option>Ativo</option><option>Inativo</option></select></FormField>
           </div>
-          {modal === 'add' && <FormField label="Senha inicial"><input type="password" value={form.senha || ''} onChange={e => F('senha',e.target.value)}/></FormField>}
+          {modal === 'add' && <FormField label="Senha inicial *"><input type="password" minLength={6} maxLength={72} value={form.senha || ''} onChange={e => F('senha',e.target.value)}/></FormField>}
           <div style={{ display:'flex', gap:8 }}><BtnSecondary onClick={close}>Cancelar</BtnSecondary><BtnPrimary onClick={modal === 'add' ? add : edit} style={{ flex:1, justifyContent:'center' }}>{modal === 'add' ? 'Criar usuário' : 'Salvar alterações'}</BtnPrimary></div>
         </Modal>
       )}
