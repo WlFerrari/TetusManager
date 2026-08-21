@@ -50,7 +50,7 @@ function AppContent() {
 
   const perms = user.permissoes || {}
   const pages = {
-    dashboard: perms.verDashboard !== false ? <DashboardPage /> : null,
+    dashboard: perms.verDashboard !== false ? <DashboardPage user={user} /> : null,
     chapas: perms.verEstoque !== false ? <ChapasPage onUpdate={showToast} user={user} /> : null,
     retalhos: perms.verEstoque !== false ? <RetalhosPage onUpdate={showToast} user={user} /> : null,
     corte: perms.registrarCorte !== false ? <CortePage onUpdate={showToast} /> : null,
