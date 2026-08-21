@@ -67,15 +67,17 @@ async function seed() {
   const createdById = adminUser?.id || null
   const operatorId = estoquistaUser?.id || createdById
 
+  // Toda chapa de demonstração que já possui corte fica Inativa. A sobra física
+  // reutilizável passa a ser controlada exclusivamente como retalho.
   const chapas = [
-    ['CH001','Preto São Gabriel','Granito','#1a1a2e',120,60,2,'Em uso','Pátio A - Cavalete 01'],
-    ['CH002','Branco Siena','Mármore','#e0d8c8',180,90,2,'Em uso','Pátio A - Cavalete 02'],
+    ['CH001','Preto São Gabriel','Granito','#1a1a2e',120,60,2,'Inativa','Arquivo - cortadas'],
+    ['CH002','Branco Siena','Mármore','#e0d8c8',180,90,2,'Inativa','Arquivo - cortadas'],
     ['CH003','Cinza Corumbá','Granito','#6b7280',140,70,3,'Disponível','Pátio A - Cavalete 03'],
     ['CH004','Verde Ubatuba','Granito','#166534',120,60,2,'Inativa','Arquivo - consumida'],
-    ['CH005','Azul Bahia','Granito','#1d4ed8',160,80,3,'Em uso','Pátio B - Cavalete 01'],
-    ['CH006','Amarelo Ornamental','Quartzito','#d97706',200,100,2,'Em uso','Pátio B - Cavalete 02'],
-    ['CH007','Vermelho Brasília','Granito','#991b1b',120,60,2,'Em uso','Pátio B - Cavalete 03'],
-    ['CH008','Marrom Imperial','Granito','#78350f',160,90,3,'Em uso','Produção'],
+    ['CH005','Azul Bahia','Granito','#1d4ed8',160,80,3,'Inativa','Arquivo - cortadas'],
+    ['CH006','Amarelo Ornamental','Quartzito','#d97706',200,100,2,'Inativa','Arquivo - cortadas'],
+    ['CH007','Vermelho Brasília','Granito','#991b1b',120,60,2,'Inativa','Arquivo - cortadas'],
+    ['CH008','Marrom Imperial','Granito','#78350f',160,90,3,'Inativa','Arquivo - cortadas'],
     ['CH009','Branco Paraná','Quartzito','#e5e7eb',190,95,2,'Disponível','Pátio C - Cavalete 01'],
     ['CH010','Bege Bahia','Mármore','#c4a484',170,85,2,'Disponível','Pátio C - Cavalete 02'],
   ]
@@ -86,19 +88,29 @@ async function seed() {
         id,nome,tipo,cor,largura,comprimento,espessura,status,localizacao,qr_code,criado_por
       )
       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
-      ON CONFLICT (id) DO NOTHING
+      ON CONFLICT (id) DO UPDATE SET
+        nome=EXCLUDED.nome,
+        tipo=EXCLUDED.tipo,
+        cor=EXCLUDED.cor,
+        largura=EXCLUDED.largura,
+        comprimento=EXCLUDED.comprimento,
+        espessura=EXCLUDED.espessura,
+        status=EXCLUDED.status,
+        localizacao=EXCLUDED.localizacao,
+        qr_code=EXCLUDED.qr_code
     `, [id,nome,tipo,cor,largura,comprimento,espessura,status,localizacao,buildChapaQrPayload(id),createdById])
   }
   console.log('[ok] chapas')
 
+  // As dimensões abaixo correspondem às sobras principais dos cortes registrados.
   const retalhos = [
-    ['RET-001','CH001','AUTOMATICA','Preto São Gabriel','Granito','#1a1a2e',60,40,2,0.24,'Disponível','Retalhos A - 01',null,null],
-    ['RET-002','CH002','AUTOMATICA','Branco Siena','Mármore','#e0d8c8',80,45,2,0.36,'Disponível','Retalhos A - 02',null,null],
-    ['RET-003','CH005','AUTOMATICA','Azul Bahia','Granito','#1d4ed8',70,50,3,0.35,'Reservado','Retalhos A - 03',null,null],
-    ['RET-004','CH006','AUTOMATICA','Amarelo Ornamental','Quartzito','#d97706',55,30,2,0.165,'Disponível','Retalhos B - 01',null,null],
+    ['RET-001','CH001','AUTOMATICA','Preto São Gabriel','Granito','#1a1a2e',40,60,2,0.24,'Disponível','Retalhos A - 01',null,null],
+    ['RET-002','CH002','AUTOMATICA','Branco Siena','Mármore','#e0d8c8',40,90,2,0.36,'Disponível','Retalhos A - 02',null,null],
+    ['RET-003','CH005','AUTOMATICA','Azul Bahia','Granito','#1d4ed8',50,80,3,0.4,'Reservado','Retalhos A - 03',null,null],
+    ['RET-004','CH006','AUTOMATICA','Amarelo Ornamental','Quartzito','#d97706',50,100,2,0.5,'Disponível','Retalhos B - 01',null,null],
     ['RET-005',null,'MANUAL','Vermelho Brasília - legado','Granito','#991b1b',45,35,2,0.1575,'Disponível','Retalhos Legados - 01',null,null],
-    ['RET-006','CH007','AUTOMATICA','Vermelho Brasília','Granito','#991b1b',50,30,2,0.15,'Consumido','Arquivo - consumidos',operatorId,null],
-    ['RET-007','CH008','AUTOMATICA','Marrom Imperial','Granito','#78350f',65,35,3,0.2275,'Descartado','Arquivo - descartados',null,operatorId],
+    ['RET-006','CH007','AUTOMATICA','Vermelho Brasília','Granito','#991b1b',50,60,2,0.3,'Consumido','Arquivo - consumidos',operatorId,null],
+    ['RET-007','CH008','AUTOMATICA','Marrom Imperial','Granito','#78350f',60,90,3,0.54,'Descartado','Arquivo - descartados',null,operatorId],
   ]
 
   for (const [id,origem,origemTipo,nome,tipo,cor,largura,comprimento,espessura,area,status,localizacao,consumidoPor,descartadoPor] of retalhos) {
@@ -113,7 +125,23 @@ async function seed() {
         $15,CASE WHEN $15::integer IS NOT NULL THEN NOW() - INTERVAL '2 days' ELSE NULL END,
         $16,CASE WHEN $16::integer IS NOT NULL THEN NOW() - INTERVAL '1 day' ELSE NULL END
       )
-      ON CONFLICT (id) DO NOTHING
+      ON CONFLICT (id) DO UPDATE SET
+        origem=EXCLUDED.origem,
+        origem_tipo=EXCLUDED.origem_tipo,
+        nome=EXCLUDED.nome,
+        tipo=EXCLUDED.tipo,
+        cor=EXCLUDED.cor,
+        largura=EXCLUDED.largura,
+        comprimento=EXCLUDED.comprimento,
+        espessura=EXCLUDED.espessura,
+        area=EXCLUDED.area,
+        status=EXCLUDED.status,
+        localizacao=EXCLUDED.localizacao,
+        qr_code=EXCLUDED.qr_code,
+        consumido_por=EXCLUDED.consumido_por,
+        consumido_em=EXCLUDED.consumido_em,
+        descartado_por=EXCLUDED.descartado_por,
+        descartado_em=EXCLUDED.descartado_em
     `, [
       id,origem,origemTipo,nome,tipo,cor,largura,comprimento,espessura,
       area,status,localizacao,buildRetalhoQrPayload(id),createdById,
@@ -123,16 +151,17 @@ async function seed() {
   console.log('[ok] retalhos')
 
   const cortes = [
-    ['OS-1001','CH001','RET-001',60,20,0.12,0.24,'Corte inicial da bancada'],
-    ['OS-1002','CH002','RET-002',80,30,0.24,0.36,'Peça para cozinha'],
-    ['OS-1003','CH005','RET-003',70,25,0.175,0.35,'Retalho reservado para orçamento'],
-    ['OS-1004','CH006','RET-004',55,20,0.11,0.165,'Corte de acabamento'],
-    ['OS-1005','CH004',null,120,60,0.72,0,'Consumo integral da chapa'],
-    ['OS-1006','CH007','RET-006',50,25,0.125,0.15,'Retalho posteriormente consumido'],
-    ['OS-1007','CH008','RET-007',65,30,0.195,0.2275,'Retalho posteriormente descartado'],
+    ['OS-1001','CH001','RET-001',60,80,0.48,0.24,'Corte inicial da bancada'],
+    ['OS-1002','CH002','RET-002',90,140,1.26,0.36,'Peça para cozinha'],
+    ['OS-1003','CH005','RET-003',80,110,0.88,0.4,'Retalho reservado para orçamento'],
+    ['OS-1004','CH006','RET-004',100,150,1.5,0.5,'Corte de acabamento'],
+    ['OS-1005','CH004',null,60,120,0.72,0,'Consumo integral da chapa'],
+    ['OS-1006','CH007','RET-006',60,70,0.42,0.3,'Retalho posteriormente consumido'],
+    ['OS-1007','CH008','RET-007',90,100,0.9,0.54,'Retalho posteriormente descartado'],
   ]
 
   for (const [osNumero,chapaId,retalhoId,comprimentoConsumido,larguraConsumida,areaConsumida,areaRetalho,observacao] of cortes) {
+    // CTE com casts explícitos evita inferência ambígua de tipos dos parâmetros.
     await query(`
       WITH novo_corte AS (
         SELECT
@@ -157,9 +186,9 @@ async function seed() {
       WHERE NOT EXISTS (
         SELECT 1
         FROM cortes c
-        WHERE c.os_numero = n.os_numero
-          AND c.chapa_id IS NOT DISTINCT FROM n.chapa_id
-          AND c.retalho_id IS NOT DISTINCT FROM n.retalho_id
+        WHERE c.os_numero::text = n.os_numero::text
+          AND c.chapa_id::text IS NOT DISTINCT FROM n.chapa_id::text
+          AND c.retalho_id::text IS NOT DISTINCT FROM n.retalho_id::text
       )
     `, [
       osNumero,chapaId,retalhoId,comprimentoConsumido,larguraConsumida,

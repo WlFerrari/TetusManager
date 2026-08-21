@@ -81,7 +81,6 @@ class CortesController {
           criadoPor:req.user?.id || null,
         }, exec)
         cortes.push(corte)
-        await ChapaRepo.setStatus(chapaId, 'Inativa', exec)
       } else {
         if (retalhos.length !== 1) {
           await client.query('ROLLBACK')
@@ -128,8 +127,12 @@ class CortesController {
           criadoPor:req.user?.id || null,
         }, exec)
         cortes.push(corte)
-        await ChapaRepo.setStatus(chapaId, 'Em uso', exec)
       }
+
+      // A chapa inteira deixa de existir fisicamente após o primeiro corte.
+      // A sobra reutilizável passa a ser representada exclusivamente pelo retalho.
+      // Isso evita contabilizar ao mesmo tempo a chapa original e sua sobra no estoque.
+      await ChapaRepo.setStatus(chapaId, 'Inativa', exec)
 
       await client.query('COMMIT')
       res.json({
@@ -138,8 +141,8 @@ class CortesController {
         cortes,
         semRetalho:resultado.length === 0,
         msg:resultado.length
-          ? 'Corte registrado e retalho gerado com sucesso!'
-          : 'Corte registrado sem geração de retalho reutilizável.',
+          ? 'Corte registrado. A chapa de origem foi inativada e a sobra foi cadastrada como retalho.'
+          : 'Corte registrado. A chapa de origem foi inativada sem geração de retalho reutilizável.',
       })
     } catch (e) {
       if (client) {

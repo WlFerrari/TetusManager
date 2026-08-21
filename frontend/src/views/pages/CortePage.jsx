@@ -87,15 +87,15 @@ export default function CortePage({ onUpdate }) {
           <CheckCircle size={18} style={{ color:'#16a34a', flexShrink:0 }}/>
           <div style={{ flex:1 }}>
             <p style={{ fontSize:13, fontWeight:600, color:'#15803d' }}>
-              {done.retalho ? 'Corte registrado e retalho criado!' : 'Corte registrado com sucesso!'}
+              {done.retalho ? 'Corte registrado e sobra transformada em retalho.' : 'Corte registrado com sucesso.'}
             </p>
             {done.retalho ? (
               <p style={{ fontSize:11, color:'#16a34a' }}>
-                {done.retalho.id} · {done.retalho.largura}×{done.retalho.comprimento} cm · {done.retalho.area} m² · Status: {done.retalho.status}
+                A chapa de origem foi inativada. O estoque restante agora é {done.retalho.id} · {done.retalho.largura}×{done.retalho.comprimento} cm · {done.retalho.area} m².
               </p>
             ) : (
               <p style={{ fontSize:11, color:'#16a34a' }}>
-                A chapa foi consumida sem geração de retalho reutilizável. O histórico do corte foi preservado.
+                A chapa de origem foi inativada sem geração de retalho reutilizável. O histórico do corte foi preservado.
               </p>
             )}
           </div>
@@ -142,8 +142,8 @@ export default function CortePage({ onUpdate }) {
           {!!calc?.ok && (
             <div style={{ background:'#fefce8', border:'1px solid #fde68a', borderRadius:8, padding:'8px 12px', fontSize:12, color:'#92400e', marginBottom:12 }}>
               {calc.retalho
-                ? 'Confira as medidas antes de salvar. O QR Code da sobra será gerado automaticamente.'
-                : 'O corte informado consome toda a área reutilizável. Apenas o corte será registrado.'}
+                ? 'Ao salvar, a chapa de origem será inativada e a sobra reutilizável passará a ser controlada como retalho com QR Code próprio.'
+                : 'O corte informado consome toda a área reutilizável. A chapa será inativada e apenas o histórico do corte será mantido.'}
             </div>
           )}
 
@@ -159,7 +159,7 @@ export default function CortePage({ onUpdate }) {
           {chapa && calc?.ok ? (
             <>
               <div style={{ background:chapa.cor, borderRadius:10, padding:14, textAlign:'center', color:'#fff', marginBottom:14 }}>
-                <p style={{ fontSize:10, opacity:.7, marginBottom:3 }}>CHAPA ORIGINAL</p>
+                <p style={{ fontSize:10, opacity:.7, marginBottom:3 }}>CHAPA ANTES DO CORTE</p>
                 <p style={{ fontSize:13, fontWeight:600 }}>{chapa.comprimento}×{chapa.largura} cm</p>
               </div>
 
@@ -167,9 +167,9 @@ export default function CortePage({ onUpdate }) {
                 <>
                   <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginBottom:12 }}>
                     {[
-                      ['Comprimento Restante', `${calc.retalho.comprimento} cm`],
-                      ['Largura Restante', `${calc.retalho.largura} cm`],
-                      ['Área Restante', `${calc.retalho.area} m²`],
+                      ['Comprimento da Sobra', `${calc.retalho.comprimento} cm`],
+                      ['Largura da Sobra', `${calc.retalho.largura} cm`],
+                      ['Área da Sobra', `${calc.retalho.area} m²`],
                       ['Área Consumida', `${percentualConsumido}%`],
                     ].map(([k,v]) => (
                       <div key={k} style={{ background:'#f9fafb', borderRadius:8, padding:'9px 12px' }}>
@@ -180,7 +180,7 @@ export default function CortePage({ onUpdate }) {
                   </div>
                   <div style={{ background:'#f9fafb', borderRadius:8, padding:'10px 14px', display:'flex', alignItems:'center', gap:12 }}>
                     <div style={{ width:40, height:40, background:'#111', borderRadius:8, display:'flex', alignItems:'center', justifyContent:'center', color:'#fff', flexShrink:0 }}><QrCode size={22}/></div>
-                    <div><p style={{ fontSize:12, fontWeight:600 }}>QR Code de Identificação</p><p style={{ fontSize:11, color:'#9ca3af' }}>Identificador persistente gerado ao salvar</p></div>
+                    <div><p style={{ fontSize:12, fontWeight:600 }}>QR Code de Identificação</p><p style={{ fontSize:11, color:'#9ca3af' }}>A sobra passa a ser uma nova unidade de estoque rastreável</p></div>
                   </div>
                 </>
               ) : (
