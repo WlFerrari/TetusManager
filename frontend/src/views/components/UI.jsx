@@ -1,6 +1,6 @@
 /** Componentes de UI reutilizáveis — View Layer */
 import React from 'react'
-import { X, Trash2 } from 'lucide-react'
+import { MoreVertical, Trash2, X } from 'lucide-react'
 
 const STATUS_COLORS = {
   disponivel:{ bg:'#d1fae5', color:'#065f46' },
@@ -35,7 +35,6 @@ export function Modal({ title, onClose, children }) {
   )
 }
 
-// Mantido para telas legadas. Para entidades de negócio, prefira confirmação de inativação/descarte.
 export function ConfirmDelete({ message, onConfirm, onCancel }) {
   return (
     <div className="overlay">
@@ -61,7 +60,7 @@ export function Toast({ message, type }) {
 }
 
 export const BtnPrimary = ({ onClick, disabled, children, style={} }) => (
-  <button onClick={onClick} disabled={disabled} style={{ display:'flex', alignItems:'center', gap:6, background:'#2563eb', color:'#fff', border:'none', borderRadius:8, padding:'10px 16px', fontSize:14, fontWeight:600, cursor:'pointer', opacity:disabled ? .4 : 1, ...style }}>{children}</button>
+  <button onClick={onClick} disabled={disabled} style={{ display:'flex', alignItems:'center', gap:6, background:'#2563eb', color:'#fff', border:'none', borderRadius:8, padding:'10px 16px', fontSize:14, fontWeight:600, cursor:disabled ? 'not-allowed' : 'pointer', opacity:disabled ? .4 : 1, ...style }}>{children}</button>
 )
 
 export const BtnSecondary = ({ onClick, children, style={} }) => (
@@ -71,6 +70,35 @@ export const BtnSecondary = ({ onClick, children, style={} }) => (
 export const BtnIcon = ({ onClick, title, children, danger=false }) => (
   <button onClick={onClick} title={title} style={{ display:'flex', alignItems:'center', justifyContent:'center', padding:'5px 8px', border:'1px solid var(--border-color)', borderRadius:6, background:'var(--bg-secondary)', cursor:'pointer', color:danger ? '#dc2626' : 'var(--text-secondary)' }}>{children}</button>
 )
+
+export function ActionMenu({ actions=[] }) {
+  const visible = actions.filter(Boolean).filter(a => !a.hidden)
+  if (!visible.length) return null
+
+  return (
+    <details style={{ position:'relative' }}>
+      <summary title="Ações" style={{ listStyle:'none', width:30, height:28, border:'1px solid var(--border-color)', borderRadius:6, background:'var(--bg-secondary)', color:'var(--text-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', userSelect:'none' }}>
+        <MoreVertical size={15}/>
+      </summary>
+      <div style={{ position:'absolute', right:0, top:34, zIndex:30, minWidth:180, padding:5, background:'var(--bg-secondary)', border:'1px solid var(--border-color)', borderRadius:9, boxShadow:'0 10px 28px rgba(0,0,0,.14)' }}>
+        {visible.map((action, index) => (
+          <button
+            key={`${action.label}-${index}`}
+            type="button"
+            onClick={e => {
+              e.currentTarget.closest('details')?.removeAttribute('open')
+              action.onClick?.()
+            }}
+            style={{ width:'100%', display:'flex', alignItems:'center', gap:8, padding:'8px 10px', border:'none', borderRadius:6, background:'transparent', cursor:'pointer', textAlign:'left', fontSize:12, color:action.danger ? '#dc2626' : 'var(--text-primary)' }}
+          >
+            {action.icon || null}
+            {action.label}
+          </button>
+        ))}
+      </div>
+    </details>
+  )
+}
 
 export function Avatar({ name, size=28 }) {
   const initials = (name || '').split(' ').map(p => p[0]).slice(0,2).join('').toUpperCase()
