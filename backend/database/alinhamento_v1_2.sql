@@ -42,8 +42,26 @@ BEGIN
   END IF;
 END $$;
 
--- Corte pode existir sem retalho (consumo integral da chapa)
+-- Compatibilidade com versões antigas nas quais o número da OS podia ter outro tipo.
+-- O domínio atual aceita identificadores como OS-1001, portanto é textual.
+ALTER TABLE cortes
+  ALTER COLUMN os_numero TYPE VARCHAR(60)
+  USING os_numero::text;
+
+-- Corte pode existir sem retalho (consumo integral da chapa).
 ALTER TABLE cortes ALTER COLUMN retalho_id DROP NOT NULL;
+
+-- Regra atual do estoque: depois que uma chapa recebe um corte, a chapa inteira
+-- vira histórico. Qualquer sobra reutilizável é controlada como um novo retalho.
+-- Também corrige dados gravados pela versão anterior, que mantinha a chapa Em uso.
+UPDATE chapas c
+SET status = 'Inativa'
+WHERE c.status = 'Em uso'
+  AND EXISTS (
+    SELECT 1
+    FROM cortes co
+    WHERE co.chapa_id = c.id
+  );
 
 -- Índices auxiliares para consulta do estoque físico/digital
 CREATE INDEX IF NOT EXISTS idx_chapas_localizacao ON chapas (localizacao);
