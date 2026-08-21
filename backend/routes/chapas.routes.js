@@ -8,6 +8,7 @@ router.get('/stats', authMiddleware, requireAnyPerm('verDashboard','verRelatorio
 router.get('/:id', authMiddleware, requirePerm('verEstoque'), (req, res, next) => ChapasController.show(req, res, next))
 router.post('/', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => ChapasController.create(req, res, next))
 router.put('/:id', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => ChapasController.update(req, res, next))
+router.patch('/:id/reativar', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => ChapasController.reactivate(req, res, next))
 router.delete('/:id', authMiddleware, requirePerm('editarEstoque'), (req, res, next) => ChapasController.delete(req, res, next))
 
 module.exports = router
