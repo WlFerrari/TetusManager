@@ -14,12 +14,12 @@ const PERMISSOES = {
     verConfiguracoes:true, verEmpresa:true,
   },
   Estoquista: {
-    verDashboard:true, verEstoque:true, editarEstoque:true,
+    verDashboard:false, verEstoque:true, editarEstoque:true,
     registrarCorte:true, verRelatorios:false, gerenciarUsuarios:false,
     verConfiguracoes:true, verEmpresa:false,
   },
   Vendedor: {
-    verDashboard:true, verEstoque:true, editarEstoque:false,
+    verDashboard:false, verEstoque:true, editarEstoque:false,
     registrarCorte:false, verRelatorios:false, gerenciarUsuarios:false,
     verConfiguracoes:true, verEmpresa:false,
   },
@@ -29,9 +29,8 @@ const buildChapaQrPayload = id => `TETUS|CHAPA|${id}`
 const buildRetalhoQrPayload = id => `TETUS|RETALHO|${id}`
 
 async function seed() {
-  console.log('🌱 Iniciando seed completo...')
+  console.log('Iniciando seed completo...')
 
-  // ── empresa ──────────────────────────────────────────────────────────
   await query(`
     INSERT INTO empresa (id, nome, cnpj, email, telefone, endereco, plano, fundacao)
     VALUES (1, 'Tetus Marmoraria', '12.345.678/0001-95',
@@ -39,9 +38,8 @@ async function seed() {
             'Rua das Pedras, 100 — Londrina, PR', 'Profissional', '2015')
     ON CONFLICT (id) DO NOTHING
   `)
-  console.log('✓ empresa')
+  console.log('[ok] empresa')
 
-  // ── usuarios ─────────────────────────────────────────────────────────
   const usuarios = [
     { nome:'João Silva', email:'joao.silva@tetus.com', perfil:'Administrador', cargo:'Sócio Administrador' },
     { nome:'Maria Santos', email:'maria.santos@tetus.com', perfil:'Estoquista', cargo:'Controladora de Estoque' },
@@ -58,7 +56,7 @@ async function seed() {
       ON CONFLICT (email) DO NOTHING
     `, [u.nome, u.email, hash, u.perfil, u.status || 'Ativo', u.cargo, JSON.stringify(PERMISSOES[u.perfil])])
   }
-  console.log('✓ usuarios')
+  console.log('[ok] usuarios')
 
   const { rows:[adminUser] } = await query(
     'SELECT id FROM usuarios WHERE email=$1 LIMIT 1', ['joao.silva@tetus.com']
@@ -69,9 +67,6 @@ async function seed() {
   const createdById = adminUser?.id || null
   const operatorId = estoquistaUser?.id || createdById
 
-  // ── chapas ───────────────────────────────────────────────────────────
-  // Chapas que já originaram retalhos ficam "Em uso"; CH004 demonstra
-  // consumo integral e fica "Inativa"; as demais ficam disponíveis.
   const chapas = [
     ['CH001','Preto São Gabriel','Granito','#1a1a2e',120,60,2,'Em uso','Pátio A - Cavalete 01'],
     ['CH002','Branco Siena','Mármore','#e0d8c8',180,90,2,'Em uso','Pátio A - Cavalete 02'],
@@ -94,10 +89,8 @@ async function seed() {
       ON CONFLICT (id) DO NOTHING
     `, [id,nome,tipo,cor,largura,comprimento,espessura,status,localizacao,buildChapaQrPayload(id),createdById])
   }
-  console.log('✓ chapas')
+  console.log('[ok] chapas')
 
-  // ── retalhos ─────────────────────────────────────────────────────────
-  // O conjunto cobre todos os estados e também um retalho manual/legado.
   const retalhos = [
     ['RET-001','CH001','AUTOMATICA','Preto São Gabriel','Granito','#1a1a2e',60,40,2,0.24,'Disponível','Retalhos A - 01',null,null],
     ['RET-002','CH002','AUTOMATICA','Branco Siena','Mármore','#e0d8c8',80,45,2,0.36,'Disponível','Retalhos A - 02',null,null],
@@ -127,12 +120,8 @@ async function seed() {
       consumidoPor,descartadoPor,
     ])
   }
-  console.log('✓ retalhos')
+  console.log('[ok] retalhos')
 
-  // ── cortes ───────────────────────────────────────────────────────────
-  // A tabela cortes era a única tabela de negócio criada nas migrations
-  // que não possuía registros no seed anterior. Estes exemplos cobrem
-  // cortes com retalho e consumo integral sem retalho.
   const cortes = [
     ['OS-1001','CH001','RET-001',60,20,0.12,0.24,'Corte inicial da bancada'],
     ['OS-1002','CH002','RET-002',80,30,0.24,0.36,'Peça para cozinha'],
@@ -159,7 +148,7 @@ async function seed() {
       areaConsumida,areaRetalho,observacao,operatorId,
     ])
   }
-  console.log('✓ cortes')
+  console.log('[ok] cortes')
 
   console.log('\nSeed concluído: empresa, usuarios, chapas, retalhos e cortes populados.')
   console.log('Login de teste: joao.silva@tetus.com / 123456')
