@@ -9,7 +9,8 @@ import { mkChapa, mkRetalho, mkUser, mkEmpresa, mkCorte } from '../models/index.
 export const chapaRepo = {
   findAll: async (filtro = '') => {
     const res = await ChapaService.listar(filtro)
-    return res.ok ? res.data.map(mkChapa) : []
+    if (!res.ok) throw new Error(res.msg)
+    return res.data.map(mkChapa)
   },
   findById: async (id) => {
     const res = await ChapaService.buscar(id)
@@ -17,7 +18,8 @@ export const chapaRepo = {
   },
   listarDisponiveis: async () => {
     const res = await ChapaService.listarDisponiveis()
-    return res.ok ? res.data.map(mkChapa) : []
+    if (!res.ok) throw new Error(res.msg)
+    return res.data.map(mkChapa)
   },
   insert: async (data) => {
     const res = await ChapaService.criar(data)
@@ -29,7 +31,6 @@ export const chapaRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkChapa(res.data)
   },
-  // Mantido como delete por compatibilidade; o backend executa inativação lógica.
   delete: async (id) => {
     const res = await ChapaService.excluir(id)
     if (!res.ok) throw new Error(res.msg)
@@ -44,7 +45,8 @@ export const chapaRepo = {
 export const retalhoRepo = {
   findAll: async (filtro = '') => {
     const res = await RetalhoService.listar(filtro)
-    return res.ok ? res.data.map(mkRetalho) : []
+    if (!res.ok) throw new Error(res.msg)
+    return res.data.map(mkRetalho)
   },
   findById: async (id) => {
     const res = await RetalhoService.buscar(id)
@@ -80,7 +82,6 @@ export const retalhoRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkRetalho(res.data)
   },
-  // Compatibilidade: excluir significa descarte lógico.
   delete: async (id) => {
     const res = await RetalhoService.marcarDescartado(id)
     if (!res.ok) throw new Error(res.msg)
@@ -97,15 +98,16 @@ export const corteRepo = {
     const res = await CorteService.registrar(data)
     if (!res.ok) throw new Error(res.msg)
     return {
-      data: (res.data || []).map(mkRetalho),
-      cortes: (res.cortes || []).map(mkCorte),
-      semRetalho: !!res.semRetalho,
-      msg: res.msg,
+      data:(res.data || []).map(mkRetalho),
+      cortes:(res.cortes || []).map(mkCorte),
+      semRetalho:!!res.semRetalho,
+      msg:res.msg,
     }
   },
   listar: async (filters = {}) => {
     const res = await CorteService.listar(filters)
-    return res.ok ? res.data.map(mkCorte) : []
+    if (!res.ok) throw new Error(res.msg)
+    return res.data.map(mkCorte)
   },
   stats: async () => {
     const res = await CorteService.stats()
@@ -116,7 +118,8 @@ export const corteRepo = {
 export const userRepo = {
   findAll: async (filtro = '') => {
     const res = await UsuarioService.listar(filtro)
-    return res.ok ? res.data.map(mkUser) : []
+    if (!res.ok) throw new Error(res.msg)
+    return res.data.map(mkUser)
   },
   findById: async (id) => {
     const res = await UsuarioService.buscar(id)
@@ -124,7 +127,8 @@ export const userRepo = {
   },
   findWhere: async (fn) => {
     const res = await UsuarioService.listar()
-    return res.ok ? res.data.filter(fn).map(mkUser) : []
+    if (!res.ok) throw new Error(res.msg)
+    return res.data.filter(fn).map(mkUser)
   },
   insert: async (data) => {
     const res = await UsuarioService.criar(data)
@@ -136,7 +140,11 @@ export const userRepo = {
     if (!res.ok) throw new Error(res.msg)
     return mkUser(res.data)
   },
-  // Compatibilidade: excluir passa a inativar no backend.
+  updateProfile: async (patch) => {
+    const res = await UsuarioService.atualizarMeuPerfil(patch)
+    if (!res.ok) throw new Error(res.msg)
+    return mkUser(res.data)
+  },
   delete: async (id) => {
     const res = await UsuarioService.excluir(id)
     if (!res.ok) throw new Error(res.msg)
@@ -163,7 +171,8 @@ export const userRepo = {
 export const empresaRepo = {
   get: async () => {
     const res = await EmpresaService.buscar()
-    return res.ok ? mkEmpresa(res.data) : mkEmpresa({})
+    if (!res.ok) throw new Error(res.msg)
+    return mkEmpresa(res.data)
   },
   update: async (patch) => {
     const res = await EmpresaService.atualizar(patch)

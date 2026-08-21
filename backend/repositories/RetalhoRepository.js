@@ -121,7 +121,8 @@ const RetalhoRepository = {
   async buscarPorId(id) { return this.findById(id) },
 
   async update(id, data, exec = query) {
-    const area = data.area ?? parseFloat(((+data.comprimento * +data.largura) / 10000).toFixed(4))
+    // Área nunca é aceita do cliente: sempre deriva das dimensões validadas.
+    const area = parseFloat(((+data.comprimento * +data.largura) / 10000).toFixed(4))
     const nome = data.nome?.trim() || `Sobra-${id}`
     const tipo = data.tipo || 'Granito'
     const cor = data.cor || '#6b7280'
@@ -166,7 +167,6 @@ const RetalhoRepository = {
   async marcarConsumido(id, consumidoPor) { return this.setStatus(id, 'Consumido', consumidoPor) },
   async marcarDescartado(id, descartadoPor) { return this.setStatus(id, 'Descartado', descartadoPor) },
 
-  // Compatibilidade: exclusão operacional vira descarte lógico.
   async delete(id) { return this.marcarDescartado(id, null) },
 
   async stats() {
