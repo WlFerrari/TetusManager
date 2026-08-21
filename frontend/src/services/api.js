@@ -99,6 +99,7 @@ export const RetalhoService = {
   liberarReserva:id => patch(`/retalhos/${id}/liberar`, {}),
   marcarConsumido:id => patch(`/retalhos/${id}/consumir`, {}),
   marcarDescartado:id => patch(`/retalhos/${id}/descartar`, {}),
+  reativar:id => patch(`/retalhos/${id}/reativar`, {}),
   excluir:id => del(`/retalhos/${id}`),
 }
 
