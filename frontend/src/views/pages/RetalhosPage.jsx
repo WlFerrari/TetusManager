@@ -7,7 +7,7 @@ import {
   SectionHeader, SearchInput,
 } from '../components/UI.jsx'
 import QRCodeModal from '../components/QRCodeModal.jsx'
-import { LIMITS, prepareImageFile, validateRetalho } from '../../utils/validation.js'
+import { LIMITS, prepareImageFile, retalhoFieldErrors } from '../../utils/validation.js'
 
 const BLANK = {
   nome:'', tipo:'Granito', cor:'#6b7280', largura:'', comprimento:'',
@@ -26,6 +26,7 @@ export default function RetalhosPage({ onUpdate, user }) {
   const [form, setForm] = useState(BLANK)
   const [target, setTarget] = useState(null)
   const [erro, setErro] = useState('')
+  const [fieldErrors, setFieldErrors] = useState({})
   const [lista, setLista] = useState([])
   const [loading, setLoading] = useState(false)
   const [qrCodeItem, setQrCodeItem] = useState(null)
@@ -43,6 +44,7 @@ export default function RetalhosPage({ onUpdate, user }) {
 
   const F = (k,v) => {
     setErro('')
+    setFieldErrors(errors => ({ ...errors, [k]:null }))
     setForm(f => ({ ...f, [k]:v }))
   }
   const FF = (k,v) => setFilters(f => ({ ...f, [k]:v }))
@@ -51,7 +53,27 @@ export default function RetalhosPage({ onUpdate, user }) {
     const n = Number(v)
     if (Number.isFinite(n) && n >= 0) FF(k, v)
   }
-  const close = () => { setModal(null); setTarget(null); setErro(''); setHistory([]) }
+  const close = () => {
+    setModal(null)
+    setTarget(null)
+    setErro('')
+    setFieldErrors({})
+    setHistory([])
+  }
+
+  function payloadAtual() {
+    return {
+      ...form,
+      status:form.status || 'Disponível',
+      origem:String(form.origem || '').trim() || null,
+      origemTipo:form.origem ? 'AUTOMATICA' : 'MANUAL',
+    }
+  }
+
+  function validateField(key) {
+    const errors = retalhoFieldErrors(payloadAtual())
+    setFieldErrors(current => ({ ...current, [key]:errors[key] || null }))
+  }
 
   async function handleFoto(e) {
     const input = e.target
@@ -59,7 +81,10 @@ export default function RetalhosPage({ onUpdate, user }) {
     if (!file) return
     const result = await prepareImageFile(file)
     input.value = ''
-    if (!result.ok) return setErro(result.msg)
+    if (!result.ok) {
+      setFieldErrors(errors => ({ ...errors, foto:result.msg }))
+      return
+    }
     F('foto', result.data)
   }
 
@@ -71,18 +96,18 @@ export default function RetalhosPage({ onUpdate, user }) {
   }
 
   function validateForm(payload) {
-    const msg = validateRetalho(payload)
-    if (msg) setErro(msg)
-    return !msg
+    const errors = retalhoFieldErrors(payload)
+    setFieldErrors(errors)
+    if (Object.keys(errors).length) {
+      setErro('Revise os campos destacados antes de continuar.')
+      return false
+    }
+    setErro('')
+    return true
   }
 
   async function handleAdd() {
-    const payload = {
-      ...form,
-      status:'Disponível',
-      origem:String(form.origem || '').trim() || null,
-      origemTipo:form.origem ? 'AUTOMATICA' : 'MANUAL',
-    }
+    const payload = { ...payloadAtual(), status:'Disponível' }
     if (!validateForm(payload)) return
     const r = await retalhoCtrl.gravarRetalho(payload)
     if (!r.ok) return setErro(r.msg)
@@ -92,7 +117,7 @@ export default function RetalhosPage({ onUpdate, user }) {
   }
 
   async function handleEdit() {
-    const payload = { ...form, status:form.status }
+    const payload = payloadAtual()
     if (!validateForm(payload)) return
     const r = await retalhoCtrl.atualizar(form.id, payload)
     if (!r.ok) return setErro(r.msg)
@@ -108,7 +133,7 @@ export default function RetalhosPage({ onUpdate, user }) {
   }
 
   async function handleConsumir(retalho) {
-    if (!window.confirm(`Marcar o retalho "${retalho.nome}" como consumido? Essa ação representa uso definitivo do material.`)) return
+    if (!window.confirm(`Marcar o retalho "${retalho.nome}" como utilizado? Essa ação representa uso definitivo do material.`)) return
     await runAction(retalhoCtrl.marcarConsumido.bind(retalhoCtrl), retalho.id)
   }
 
@@ -133,7 +158,7 @@ export default function RetalhosPage({ onUpdate, user }) {
               {showFilters ? 'Ocultar filtros' : `Filtros (${activeFilters})`}
             </BtnSecondary>
             {canEdit && (
-              <BtnPrimary onClick={() => { setForm({ ...BLANK }); setErro(''); setModal('add') }}>
+              <BtnPrimary onClick={() => { setForm({ ...BLANK }); setErro(''); setFieldErrors({}); setModal('add') }}>
                 <Plus size={14}/> Novo Retalho
               </BtnPrimary>
             )}
@@ -202,10 +227,10 @@ export default function RetalhosPage({ onUpdate, user }) {
             {canEdit && (
               <ActionMenu actions={[
                 { label:'QR Code', icon:<QrCode size={13}/>, onClick:() => setQrCodeItem(r) },
-                { label:'Editar dados', icon:<Edit2 size={13}/>, hidden:!['Disponível','Reservado'].includes(r.status), onClick:() => { setForm({ ...r }); setErro(''); setModal('edit') } },
+                { label:'Editar dados', icon:<Edit2 size={13}/>, hidden:!['Disponível','Reservado'].includes(r.status), onClick:() => { setForm({ ...r }); setErro(''); setFieldErrors({}); setModal('edit') } },
                 { label:'Reservar', icon:<Bookmark size={13}/>, hidden:r.status !== 'Disponível', onClick:() => runAction(retalhoCtrl.reservar.bind(retalhoCtrl), r.id) },
                 { label:'Liberar reserva', icon:<BookmarkX size={13}/>, hidden:r.status !== 'Reservado', onClick:() => runAction(retalhoCtrl.liberarReserva.bind(retalhoCtrl), r.id) },
-                { label:'Marcar como consumido', icon:<CheckSquare size={13}/>, hidden:!['Disponível','Reservado'].includes(r.status), onClick:() => handleConsumir(r) },
+                { label:'Marcar como utilizado', icon:<CheckSquare size={13}/>, hidden:!['Disponível','Reservado'].includes(r.status), onClick:() => handleConsumir(r) },
                 { label:'Descartar', icon:<XSquare size={13}/>, danger:true, hidden:['Consumido','Descartado'].includes(r.status), onClick:() => handleDescartar(r) },
               ]}/>
             )}
@@ -246,27 +271,26 @@ export default function RetalhosPage({ onUpdate, user }) {
               Deixe a chapa de origem vazia para cadastrar um retalho manual/legado.
             </div>
           )}
-          <FormField label="Nome *"><input maxLength={LIMITS.nome} value={form.nome || ''} onChange={e => F('nome',e.target.value)}/></FormField>
-          <FormField label="Foto do retalho (JPG, PNG ou WEBP)">
+          <FormField label="Nome *" error={fieldErrors.nome}><input maxLength={LIMITS.nome} value={form.nome || ''} onChange={e => F('nome',e.target.value)} onBlur={() => validateField('nome')}/></FormField>
+          <FormField label="Foto do retalho (JPG, PNG ou WEBP)" error={fieldErrors.foto} hint="Arquivos que não sejam JPG, PNG ou WEBP são recusados. A foto é comprimida para até 500 KB.">
             <div style={{ display:'flex', gap:8, alignItems:'center' }}>
               <label style={{ display:'inline-flex', gap:6, alignItems:'center', cursor:'pointer', border:'1px solid #e5e7eb', borderRadius:8, padding:'8px 12px', fontSize:12 }}>
                 <Camera size={14}/> Enviar foto<input type="file" accept="image/jpeg,image/png,image/webp" onChange={handleFoto} style={{ display:'none' }}/>
               </label>
               {form.foto && <button type="button" onClick={() => F('foto', null)} title="Remover foto" style={{ border:'none', background:'transparent', color:'#dc2626', cursor:'pointer', display:'flex' }}><X size={16}/></button>}
             </div>
-            <p style={{ fontSize:10, color:'#9ca3af', marginTop:4 }}>Arquivos que não sejam imagem são recusados. A foto é comprimida para até 500 KB.</p>
           </FormField>
           <div className="form-grid-2">
-            <FormField label="Tipo"><select value={form.tipo} onChange={e => F('tipo',e.target.value)}>{TIPOS_ROCHA.map(v => <option key={v}>{v}</option>)}</select></FormField>
-            <FormField label="Cor"><input type="color" value={form.cor} onChange={e => F('cor',e.target.value)}/></FormField>
-            <FormField label="Largura (cm) *"><input type="number" min="0.01" max="10000" step="0.01" value={form.largura} onChange={e => F('largura',e.target.value)}/></FormField>
-            <FormField label="Comprimento (cm) *"><input type="number" min="0.01" max="10000" step="0.01" value={form.comprimento} onChange={e => F('comprimento',e.target.value)}/></FormField>
-            <FormField label="Espessura (cm) *"><input type="number" min="0.01" max="100" step="0.01" value={form.espessura} onChange={e => F('espessura',e.target.value)}/></FormField>
+            <FormField label="Tipo" error={fieldErrors.tipo}><select value={form.tipo} onChange={e => F('tipo',e.target.value)} onBlur={() => validateField('tipo')}>{TIPOS_ROCHA.map(v => <option key={v}>{v}</option>)}</select></FormField>
+            <FormField label="Cor" error={fieldErrors.cor}><input type="color" value={form.cor} onChange={e => F('cor',e.target.value)} onBlur={() => validateField('cor')}/></FormField>
+            <FormField label="Largura (cm) *" error={fieldErrors.largura}><input type="number" min="0.01" max="10000" step="0.01" value={form.largura} onChange={e => F('largura',e.target.value)} onBlur={() => validateField('largura')}/></FormField>
+            <FormField label="Comprimento (cm) *" error={fieldErrors.comprimento}><input type="number" min="0.01" max="10000" step="0.01" value={form.comprimento} onChange={e => F('comprimento',e.target.value)} onBlur={() => validateField('comprimento')}/></FormField>
+            <FormField label="Espessura (cm) *" error={fieldErrors.espessura}><input type="number" min="0.01" max="100" step="0.01" value={form.espessura} onChange={e => F('espessura',e.target.value)} onBlur={() => validateField('espessura')}/></FormField>
             <FormField label="Área calculada (m²)"><input value={areaForm} disabled/></FormField>
           </div>
-          {modal === 'add' && <FormField label="Chapa de origem (opcional)"><input maxLength={80} value={form.origem || ''} onChange={e => F('origem',e.target.value)} placeholder="Ex: CH001 — vazio = legado"/></FormField>}
-          <FormField label="Localização física"><input maxLength={LIMITS.localizacao} value={form.localizacao || ''} onChange={e => F('localizacao',e.target.value)} placeholder="Ex: Retalhos A - Posição 04"/></FormField>
-          <FormField label="Status"><input value={form.status || 'Disponível'} disabled/></FormField>
+          {modal === 'add' && <FormField label="Chapa de origem (opcional)" error={fieldErrors.origem}><input maxLength={80} value={form.origem || ''} onChange={e => F('origem',e.target.value)} onBlur={() => validateField('origem')} placeholder="Ex: CH001 — vazio = legado"/></FormField>}
+          <FormField label="Localização física" error={fieldErrors.localizacao}><input maxLength={LIMITS.localizacao} value={form.localizacao || ''} onChange={e => F('localizacao',e.target.value)} onBlur={() => validateField('localizacao')} placeholder="Ex: Retalhos A - Posição 04"/></FormField>
+          <FormField label="Status" error={fieldErrors.status}><input value={form.status || 'Disponível'} disabled/></FormField>
           <div style={{ display:'flex', gap:8 }}>
             <BtnSecondary onClick={close}>Cancelar</BtnSecondary>
             <BtnPrimary onClick={modal === 'add' ? handleAdd : handleEdit} style={{ flex:1, justifyContent:'center' }}>
