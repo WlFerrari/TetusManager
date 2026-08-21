@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react'
-import { Bell, Layers, LayoutDashboard, Menu, Moon, Package, Scissors, Settings, Sun } from 'lucide-react'
+import { Layers, LayoutDashboard, Menu, Moon, Package, Scissors, Settings, Sun } from 'lucide-react'
 
 import { ThemeProvider, useTheme } from './contexts/ThemeContext.jsx'
 import Sidebar from './views/components/Sidebar.jsx'
@@ -21,6 +21,19 @@ const BOTTOM_NAV = [
   { id:'configuracoes', label:'Config', Icon:Settings, perm:'verConfiguracoes' },
 ]
 
+const PAGE_PRIORITY = [
+  ['dashboard','verDashboard'],
+  ['chapas','verEstoque'],
+  ['corte','registrarCorte'],
+  ['relatorios','verRelatorios'],
+  ['configuracoes','verConfiguracoes'],
+]
+
+function firstAllowedPage(user) {
+  const perms = user?.permissoes || {}
+  return PAGE_PRIORITY.find(([, perm]) => perms[perm] !== false)?.[0] || 'configuracoes'
+}
+
 function AppContent() {
   const { theme, toggleTheme } = useTheme()
   const [user, setUser] = useState(null)
@@ -36,6 +49,11 @@ function AppContent() {
     timer.current = setTimeout(() => setToast(null), 3000)
   }
 
+  function handleLogin(loggedUser) {
+    setUser(loggedUser)
+    setPage(firstAllowedPage(loggedUser))
+  }
+
   function handleUserUpdate(updatedUser) { setUser(updatedUser) }
 
   function toggleSidebar() {
@@ -46,7 +64,7 @@ function AppContent() {
     })
   }
 
-  if (!user) return <LoginPage onLogin={u => { setUser(u); setPage('dashboard') }} />
+  if (!user) return <LoginPage onLogin={handleLogin} />
 
   const perms = user.permissoes || {}
   const pages = {
@@ -89,10 +107,6 @@ function AppContent() {
         <div className="top-bar desktop-only">
           <div />
           <div style={{ display:'flex', alignItems:'center', gap:12 }}>
-            <div style={{ position:'relative' }}>
-              <button style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }} aria-label="Notificações"><Bell size={17}/></button>
-              <span style={{ position:'absolute', top:8, right:8, width:7, height:7, background:'#2563eb', borderRadius:'50%' }}/>
-            </div>
             <button onClick={toggleTheme} title={`Mudar para modo ${theme === 'light' ? 'escuro' : 'claro'}`} style={{ width:38, height:38, border:'1px solid var(--border-color)', borderRadius:9, background:'var(--bg-secondary)', cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', color:'var(--text-secondary)' }}>
               {theme === 'light' ? <Moon size={17}/> : <Sun size={17}/>}
             </button>
