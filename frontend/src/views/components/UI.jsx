@@ -16,9 +16,11 @@ const STATUS_COLORS = {
 const normalizeStatus = value => (value || '')
   .normalize('NFD').replace(/\p{Diacritic}/gu, '').toLowerCase()
 
+export const displayStatus = status => status === 'Consumido' ? 'Utilizado' : status
+
 export function Badge({ status }) {
   const s = STATUS_COLORS[normalizeStatus(status)] || { bg:'#f3f4f6', color:'#374151' }
-  return <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:99, fontSize:11, fontWeight:500, background:s.bg, color:s.color }}>{status}</span>
+  return <span style={{ display:'inline-block', padding:'2px 9px', borderRadius:99, fontSize:11, fontWeight:500, background:s.bg, color:s.color }}>{displayStatus(status)}</span>
 }
 
 export function Modal({ title, onClose, children }) {
