@@ -42,6 +42,33 @@ function Tab({ id, label, Icon, active, onClick }) {
   )
 }
 
+function PasswordInputField({ label, field, value, visible, error, onChange, onBlur, onToggle }) {
+  return (
+    <FormField label={label} error={error}>
+      <div style={{ position:'relative' }}>
+        <input
+          maxLength={72}
+          type={visible ? 'text' : 'password'}
+          value={value}
+          onChange={e => onChange(e.target.value)}
+          onBlur={onBlur}
+          style={{ paddingRight:40 }}
+          autoComplete={field === 'atual' ? 'current-password' : 'new-password'}
+        />
+        <button
+          type="button"
+          onMouseDown={e => e.preventDefault()}
+          onClick={onToggle}
+          style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#9ca3af' }}
+          aria-label={visible ? 'Ocultar senha' : 'Mostrar senha'}
+        >
+          {visible ? <EyeOff size={15}/> : <Eye size={15}/>} 
+        </button>
+      </div>
+    </FormField>
+  )
+}
+
 function TabMeuPerfil({ user, onUserUpdate, onToast }) {
   const [form, setForm] = useState({ nome:user.nome, telefone:user.telefone || '', cargo:user.cargo || '', foto:user.foto || null })
   const [saving, setSaving] = useState(false)
@@ -171,28 +198,42 @@ function TabSeguranca({ user, onToast }) {
     setSaving(false)
   }
 
-  function PasswordField({ label, fkey }) {
-    return (
-      <FormField label={label} error={fieldErrors[fkey]}>
-        <div style={{ position:'relative' }}>
-          <input maxLength={72} type={show[fkey] ? 'text' : 'password'} value={form[fkey]} onChange={e => F(fkey,e.target.value)} onBlur={() => validateField(fkey)} style={{ paddingRight:40 }}/>
-          <button type="button" onClick={() => setShow(s => ({ ...s, [fkey]:!s[fkey] }))} style={{ position:'absolute', right:10, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', color:'#9ca3af' }} aria-label={show[fkey] ? 'Ocultar senha' : 'Mostrar senha'}>
-            {show[fkey] ? <EyeOff size={15}/> : <Eye size={15}/>} 
-          </button>
-        </div>
-      </FormField>
-    )
-  }
-
   return (
     <div style={{ maxWidth:420 }}>
       <p style={{ fontSize:14, color:'#6b7280', marginBottom:24 }}>Altere sua senha de acesso. A senha atual é validada no servidor.</p>
       <div style={{ background:'#fff', borderRadius:12, border:'1px solid #f3f4f6', padding:20, marginBottom:20 }}>
         <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:16 }}><Lock size={18} style={{ color:'#2563eb' }}/><strong>Alterar senha</strong></div>
         {erro && <p style={{ color:'#dc2626', fontSize:12, marginBottom:10 }}>{erro}</p>}
-        <PasswordField label="Senha atual *" fkey="atual"/>
-        <PasswordField label="Nova senha *" fkey="nova"/>
-        <PasswordField label="Confirmar senha *" fkey="confirma"/>
+        <PasswordInputField
+          label="Senha atual *"
+          field="atual"
+          value={form.atual}
+          visible={show.atual}
+          error={fieldErrors.atual}
+          onChange={value => F('atual', value)}
+          onBlur={() => validateField('atual')}
+          onToggle={() => setShow(current => ({ ...current, atual:!current.atual }))}
+        />
+        <PasswordInputField
+          label="Nova senha *"
+          field="nova"
+          value={form.nova}
+          visible={show.nova}
+          error={fieldErrors.nova}
+          onChange={value => F('nova', value)}
+          onBlur={() => validateField('nova')}
+          onToggle={() => setShow(current => ({ ...current, nova:!current.nova }))}
+        />
+        <PasswordInputField
+          label="Confirmar senha *"
+          field="confirma"
+          value={form.confirma}
+          visible={show.confirma}
+          error={fieldErrors.confirma}
+          onChange={value => F('confirma', value)}
+          onBlur={() => validateField('confirma')}
+          onToggle={() => setShow(current => ({ ...current, confirma:!current.confirma }))}
+        />
         <BtnPrimary onClick={handleSalvar} disabled={saving}><Lock size={14}/>{saving ? 'Salvando...' : 'Alterar senha'}</BtnPrimary>
       </div>
       <div style={{ background:'#f9fafb', borderRadius:12, padding:16 }}>
