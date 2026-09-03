@@ -16,9 +16,10 @@ export const tokenStorage = {
 
 async function apiFetch(path, options={}) {
   const token = tokenStorage.get()
+  const isLogin = path === '/auth/login'
   const headers = {
     'Content-Type':'application/json',
-    ...(token ? { Authorization:`Bearer ${token}` } : {}),
+    ...(!isLogin && token ? { Authorization:`Bearer ${token}` } : {}),
     ...options.headers,
   }
 
@@ -36,7 +37,7 @@ async function apiFetch(path, options={}) {
     json = { ok:false, msg:`O servidor retornou uma resposta inválida (${res.status}).` }
   }
 
-  if (res.status === 401 && token && path !== '/auth/login') {
+  if (res.status === 401 && token && !isLogin) {
     tokenStorage.remove()
     window.location.reload()
   }
