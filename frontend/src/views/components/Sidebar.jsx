@@ -1,7 +1,7 @@
 import React from 'react'
 import {
   BarChart3, ChevronLeft, ChevronRight, Layers, LayoutDashboard,
-  LogOut, Package, Scissors, Settings, X,
+  LogOut, Package, Scissors, Settings,
 } from 'lucide-react'
 import { Avatar } from './UI.jsx'
 import { PERFIL_LABELS } from '../../models/index.js'
@@ -44,9 +44,6 @@ export default function Sidebar({
             <p className="sidebar-title">TetusManager</p>
             <p className="sidebar-subtitle">Sistema de Estoque</p>
           </div>
-          <button onClick={onClose} className="mobile-close-btn sidebar-icon-button" title="Fechar menu" aria-label="Fechar menu">
-            <X size={18}/>
-          </button>
           <button
             type="button"
             onClick={onToggleCollapsed}

@@ -36,7 +36,7 @@ export default function RelatoriosPage({ onUpdate }) {
     const [chapasRes, retalhosRes, cortesRes, chapaStats, retalhoStats, corteStats] = await Promise.all([
       chapaCtrl.listarChapas({}),
       retalhoCtrl.listar({}),
-      corteCtrl.listar({ limit:200 }),
+      corteCtrl.listar({}),
       chapaCtrl.stats(),
       retalhoCtrl.stats(),
       corteCtrl.stats(),

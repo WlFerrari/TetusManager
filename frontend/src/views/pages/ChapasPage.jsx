@@ -21,6 +21,7 @@ export default function ChapasPage({ onUpdate, user }) {
     minLargura:'', minComprimento:'',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [grupo, setGrupo] = useState('ativas')
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(BLANK)
   const [target, setTarget] = useState(null)
@@ -131,12 +132,17 @@ export default function ChapasPage({ onUpdate, user }) {
   }
 
   const activeFilters = Object.values(filters).filter(v => String(v ?? '').trim()).length
+  const chapasAtivas = lista.filter(c => c.status !== 'Inativa')
+  const chapasInativas = lista.filter(c => c.status === 'Inativa')
+  const listaVisivel = filters.status
+    ? lista
+    : grupo === 'inativas' ? chapasInativas : chapasAtivas
 
   return (
     <div>
       <SectionHeader
         title="Chapas Brutas"
-        subtitle={`${lista.length} registro(s)`}
+        subtitle={`${chapasAtivas.length} ativa(s) · ${chapasInativas.length} inativa(s)`}
         action={
           <div style={{ display:'flex', gap:8 }}>
             <BtnSecondary onClick={() => setShowFilters(v => !v)}>
@@ -189,12 +195,33 @@ export default function ChapasPage({ onUpdate, user }) {
         </div>
       )}
 
+      {!filters.status && (
+        <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setGrupo('ativas')}
+            style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:'7px 12px', cursor:'pointer', fontSize:12, fontWeight:grupo === 'ativas' ? 700 : 500, background:grupo === 'ativas' ? '#eff6ff' : '#fff', color:grupo === 'ativas' ? '#2563eb' : '#6b7280' }}
+          >
+            Ativas ({chapasAtivas.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setGrupo('inativas')}
+            style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:'7px 12px', cursor:'pointer', fontSize:12, fontWeight:grupo === 'inativas' ? 700 : 500, background:grupo === 'inativas' ? '#f9fafb' : '#fff', color:grupo === 'inativas' ? '#374151' : '#6b7280' }}
+          >
+            Inativas ({chapasInativas.length})
+          </button>
+        </div>
+      )}
+
       <div className="cards-grid" style={{ maxHeight:'68vh', overflowY:'auto' }}>
         {loading ? (
           <div style={{ gridColumn:'1/-1', textAlign:'center', padding:48, color:'#9ca3af' }}>Carregando...</div>
-        ) : lista.length === 0 ? (
-          <div style={{ gridColumn:'1/-1', textAlign:'center', padding:48, color:'#9ca3af' }}>Nenhuma chapa encontrada.</div>
-        ) : lista.map(c => (
+        ) : listaVisivel.length === 0 ? (
+          <div style={{ gridColumn:'1/-1', textAlign:'center', padding:48, color:'#9ca3af' }}>
+            {grupo === 'inativas' && !filters.status ? 'Nenhuma chapa inativa encontrada.' : 'Nenhuma chapa ativa encontrada.'}
+          </div>
+        ) : listaVisivel.map(c => (
           <div key={c.id} style={{ background:'#fff', borderRadius:12, border:'1px solid #f3f4f6', overflow:'hidden' }}>
             {c.foto
               ? <img src={c.foto} alt={c.nome} style={{ width:'100%', height:70, objectFit:'cover' }}/>
