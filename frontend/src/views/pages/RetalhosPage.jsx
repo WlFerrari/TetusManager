@@ -22,6 +22,7 @@ export default function RetalhosPage({ onUpdate, user }) {
     localizacao:'', minLargura:'', minComprimento:'', minArea:'',
   })
   const [showFilters, setShowFilters] = useState(false)
+  const [grupo, setGrupo] = useState('operacionais')
   const [modal, setModal] = useState(null)
   const [form, setForm] = useState(BLANK)
   const [target, setTarget] = useState(null)
@@ -148,6 +149,11 @@ export default function RetalhosPage({ onUpdate, user }) {
   }
 
   const activeFilters = Object.values(filters).filter(v => String(v ?? '').trim()).length
+  const operacionais = lista.filter(r => ['Disponível','Reservado'].includes(r.status))
+  const finalizados = lista.filter(r => ['Consumido','Descartado'].includes(r.status))
+  const listaVisivel = filters.status
+    ? lista
+    : grupo === 'finalizados' ? finalizados : operacionais
   const areaForm = Number(form.comprimento) > 0 && Number(form.largura) > 0
     ? ((Number(form.comprimento) * Number(form.largura)) / 10000).toFixed(4)
     : '0.0000'
@@ -156,7 +162,7 @@ export default function RetalhosPage({ onUpdate, user }) {
     <div>
       <SectionHeader
         title="Retalhos"
-        subtitle={`${lista.length} registro(s)`}
+        subtitle={`${operacionais.length} operacional(is) · ${finalizados.length} finalizado(s)`}
         action={
           <div style={{ display:'flex', gap:8 }}>
             <BtnSecondary onClick={() => setShowFilters(v => !v)}>
@@ -203,12 +209,33 @@ export default function RetalhosPage({ onUpdate, user }) {
         </div>
       )}
 
+      {!filters.status && (
+        <div style={{ display:'flex', gap:8, marginBottom:12, flexWrap:'wrap' }}>
+          <button
+            type="button"
+            onClick={() => setGrupo('operacionais')}
+            style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:'7px 12px', cursor:'pointer', fontSize:12, fontWeight:grupo === 'operacionais' ? 700 : 500, background:grupo === 'operacionais' ? '#eff6ff' : '#fff', color:grupo === 'operacionais' ? '#2563eb' : '#6b7280' }}
+          >
+            Disponíveis e reservados ({operacionais.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setGrupo('finalizados')}
+            style={{ border:'1px solid #e5e7eb', borderRadius:8, padding:'7px 12px', cursor:'pointer', fontSize:12, fontWeight:grupo === 'finalizados' ? 700 : 500, background:grupo === 'finalizados' ? '#f9fafb' : '#fff', color:grupo === 'finalizados' ? '#374151' : '#6b7280' }}
+          >
+            Finalizados ({finalizados.length})
+          </button>
+        </div>
+      )}
+
       <div style={{ display:'flex', flexDirection:'column', gap:6, maxHeight:'68vh', overflowY:'auto' }}>
         {loading ? (
           <div style={{ textAlign:'center', padding:48, color:'#9ca3af' }}>Carregando...</div>
-        ) : lista.length === 0 ? (
-          <div style={{ textAlign:'center', padding:48, color:'#9ca3af' }}>Nenhum retalho encontrado.</div>
-        ) : lista.map(r => (
+        ) : listaVisivel.length === 0 ? (
+          <div style={{ textAlign:'center', padding:48, color:'#9ca3af' }}>
+            {grupo === 'finalizados' && !filters.status ? 'Nenhum retalho finalizado encontrado.' : 'Nenhum retalho disponível ou reservado encontrado.'}
+          </div>
+        ) : listaVisivel.map(r => (
           <div key={r.id} style={{ background:'#fff', borderRadius:10, border:'1px solid #f3f4f6', padding:'11px 14px', display:'flex', alignItems:'center', gap:12 }}>
             {r.foto
               ? <img src={r.foto} alt={r.nome} style={{ width:38, height:38, borderRadius:8, objectFit:'cover' }}/>
