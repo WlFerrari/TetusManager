@@ -146,7 +146,10 @@ export const userRepo = {
     return mkUser(res.data)
   },
   update:async (id,patch) => {
-    const res = await UsuarioService.atualizar(id, patch)
+    const isOwnProfileUpdate = !('email' in patch) && !('perfil' in patch) && !('status' in patch)
+    const res = isOwnProfileUpdate
+      ? await UsuarioService.atualizarMeuPerfil(patch)
+      : await UsuarioService.atualizar(id, patch)
     if (!res.ok) throw new Error(res.msg)
     return mkUser(res.data)
   },
