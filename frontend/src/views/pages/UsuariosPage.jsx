@@ -18,7 +18,6 @@ export default function UsuariosPage({ onUpdate }) {
   const [lista,  setLista]  = useState([])
   const [loading, setLoading] = useState(false)
 
-  // Carrega usuários ao montar e quando search mudar
   useEffect(() => {
     carregarUsuarios()
   }, [search])
@@ -106,7 +105,15 @@ export default function UsuariosPage({ onUpdate }) {
                 <tr key={u.id}>
                   <td>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 9 }}>
-                      <Avatar name={u.nome} size={28} />
+                      {u.foto ? (
+                        <img
+                          src={u.foto}
+                          alt={`Foto de ${u.nome}`}
+                          style={{ width:28, height:28, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}
+                        />
+                      ) : (
+                        <Avatar name={u.nome} size={28} />
+                      )}
                       <span style={{ fontSize: 13, fontWeight: 500, color: 'var(--text-primary)' }}>{u.nome}</span>
                     </div>
                   </td>
