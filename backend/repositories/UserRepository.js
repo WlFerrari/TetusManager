@@ -83,12 +83,13 @@ const UserRepository = {
   async updateFull(id, data) {
     const { rows } = await query(`
       UPDATE usuarios
-      SET nome=$1, email=$2, perfil=$3, status=$4, telefone=$5, cargo=$6, permissoes=$7::jsonb
-      WHERE id=$8
+      SET nome=$1, email=$2, perfil=$3, status=$4, telefone=$5, cargo=$6, foto=$7, permissoes=$8::jsonb
+      WHERE id=$9
       RETURNING *
     `, [
       data.nome, data.email.toLowerCase(), data.perfil, data.status,
-      data.telefone || '', data.cargo || '', JSON.stringify(data.permissoes || {}), id,
+      data.telefone || '', data.cargo || '', data.foto || null,
+      JSON.stringify(data.permissoes || {}), id,
     ])
     if (!rows[0]) throw new Error('Usuário não encontrado')
     return toModel(rows[0])
