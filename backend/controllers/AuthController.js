@@ -32,9 +32,13 @@ class AuthController {
         email:row.email,
         perfil:row.perfil,
         permissoes:row.permissoes,
-        foto:row.foto,
-        telefone:row.telefone,
-        cargo:row.cargo,
+      }
+
+      const user = {
+        ...payload,
+        foto:row.foto || null,
+        telefone:row.telefone || '',
+        cargo:row.cargo || '',
       }
 
       const token = jwt.sign(payload, process.env.JWT_SECRET, {
@@ -43,7 +47,7 @@ class AuthController {
 
       res.json({
         ok:true,
-        data:{ token, user:payload },
+        data:{ token, user },
         msg:'Login realizado com sucesso!',
       })
     } catch (e) {
